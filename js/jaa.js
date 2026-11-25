@@ -79,6 +79,7 @@
     }
     const varmuus = [];
     for (const f of files) if (await onVarmuuskopio(f)) varmuus.push(f);
+    const pelkatKuvat = files.length > 0 && files.every((f) => /^image\//.test(f.type) || /\.(jpe?g|png|heic|webp)$/i.test(f.name));
     const kohteet = (await DB.all("kohteet")).sort((a, b) => (b.updated || 0) - (a.updated || 0)).slice(0, 12);
     root.innerHTML = App.topbar({ title: "Jaettu sovellukseen", sub: (() => { const n = files.length + (paketti ? 1 : 0); return n === 1 ? "1 tiedosto" : n + " tiedostoa"; })(), back: "#/" }) +
       '<main class="view no-nav">' +
@@ -89,7 +90,7 @@
       "</div></section>" +
       (varmuus.length ? '<button class="btn btn-block" data-palauta style="margin-bottom:12px">' + icon("download") + "Palauta kohde varmuuskopiosta</button>" : "") +
       '<section class="card"><div class="card-h"><h2>Mihin kohteeseen?</h2></div>' +
-        '<button class="row" data-uusi>' + icon("plus") + '<div class="grow"><div class="t">Uusi kohde</div><div class="s">Nimi täyttyy lähtötiedoista</div></div></button>' +
+        '<button class="row" data-uusi>' + icon("plus") + '<div class="grow"><div class="t">Uusi kohde</div><div class="s">' + (pelkatKuvat ? "Kuvat lähtötiedoiksi uuteen kohteeseen" : "Nimi täyttyy lähtötiedoista") + '</div></div></button>' +
         kohteet.map((k) => '<button class="row" data-kohde="' + k.id + '">' + icon("list") + '<div class="grow"><div class="t">' + esc(k.nimi || "Nimetön kohde") + "</div>" +
           (k.osoite ? '<div class="s">' + esc(k.osoite) + "</div>" : "") + "</div>" + icon("back", "flip") + "</button>").join("") +
       "</section>" +
@@ -112,8 +113,41 @@
         return;
       }
       const b = e.target.closest("[data-kohde]");
+      if (b && pelkatKuvat && !paketti) { await kuvatKohteeseen(b.dataset.kohde, files); return; }
       if (b) location.hash = "#/k/" + b.dataset.kohde + "/lahtotiedot?jaettu=1";
     });
+  }
+
+  /* Puhelimen kamerasta tai galleriasta jaetut kuvat: kirjaukseksi (oletus), yleiskuviksi
+     tai lähtötiedoiksi (pohjakuva, asiakirja). */
+  async function kuvatKohteeseen(kid, files) {
+    const valinta = await new Promise((res) => {
+      let v = null;
+      UI.sheet("<h3>" + (files.length === 1 ? "Mihin kuva?" : "Mihin " + files.length + " kuvaa?") + "</h3>" +
+        '<button class="row" data-v="kirjaus">' + icon("cam") + '<div class="grow"><div class="t">Uusi kirjaus</div><div class="s">Kuvat samaan kirjaukseen; sanele tai kirjoita havainto perään</div></div></button>' +
+        '<button class="row" data-v="yleiskuva">' + icon("image") + '<div class="grow"><div class="t">Yleiskuviksi</div><div class="s">Julkisivut, tilat, ei havaintoa</div></div></button>' +
+        '<button class="row" data-v="lahtotiedot">' + icon("download") + '<div class="grow"><div class="t">Lähtötiedoiksi</div><div class="s">Pohjakuva tai asiakirja</div></div></button>',
+        (el, close) => el.querySelectorAll("[data-v]").forEach((x) => x.addEventListener("click", () => { v = x.dataset.v; close(); })),
+        { onClose: () => res(v) });
+    });
+    if (!valinta) return;
+    if (valinta === "lahtotiedot") { location.hash = "#/k/" + kid + "/lahtotiedot?jaettu=1"; return; }
+    try {
+      if (!(await App.loadKohde(kid))) throw new Error("Kohdetta ei löytynyt");
+      toast("Tallennetaan kuvia…", 4000);
+      const k = App.S.kohde;
+      if (valinta === "yleiskuva") {
+        for (const f of files) await Yleiskuvat.lisaa(await Camera.shrink(f).catch(() => f), null);
+        await tyhjenna(); toast(files.length + (files.length === 1 ? " yleiskuva lisätty" : " yleiskuvaa lisätty"));
+        location.hash = "#/k/" + kid + "/yleiskuvat"; return;
+      }
+      const h = Model.newHavainto(k, {});
+      h.sijainti = { kerrosId: null, tilaId: null, rakenneosa: null, piste: null };
+      for (const f of files) h.kuvat.push(await DB.putFile(k.id, await Camera.shrink(f).catch(() => f), { kind: "kuva", havaintoId: h.id }));
+      await Model.saveHavainto(h);
+      await tyhjenna();
+      location.hash = "#/k/" + kid + "/h/" + h.id;
+    } catch (err) { console.warn(err); toast("Kuvien tallennus ei onnistunut: " + (err.message || err), 5000); }
   }
 
   /* ---------- Käsittely valitussa kohteessa (Lähtötiedot-sivu kutsuu) ---------- */

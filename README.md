@@ -40,6 +40,14 @@ Testipalvelin tarjoilee sovelluksen ja jäljittelee SharePointia (pilvi = "testi
 
 Puhelimella testaus vaatii HTTPS:n (kamera, sanelu, anturit). Julkaisu esim. GitHub Pagesiin tai Azure Static Web Appsiin.
 
+### Asennus puhelimen alkunäyttöön
+
+- Avaa julkaistu osoite (esim. `https://<käyttäjä>.github.io/kirjuri/index.html`) **Chromessa Androidilla** → valikko ⋮ → *Asenna sovellus*. Avaa sivu kerran ja odota pari sekuntia ennen asennusta (service worker käynnistyy).
+- Ei toimi: ZIP:stä tai tiedostosta avattuna (`file://`), GitHubin koodinäkymästä (github.com/…/index.html) eikä yksityisestä GitHub Pages -sivusta ilmaisella tilillä. Asennuksessa Google hakee kuvakkeet ja manifestin, joten osoitteen on oltava julkinen (sovellus itsessään ei sisällä asiakastietoja; ne ovat puhelimessa ja SharePointissa).
+- Jos samaan osoitteeseen on aiemmin asennettu toinen sovellus (esim. Kuva + sanelu), poista vanha ensin.
+- iPhone: Safari → Jaa → *Lisää Koti-valikkoon*. iPhonessa jakaminen muista sovelluksista Kirjuriin ei ole mahdollista (Applen rajoitus).
+- Jakaminen Kirjuriin (Android): kuva → *Jaa* → Kirjuri → valitse kohde → *Uusi kirjaus*, *Yleiskuviksi* tai *Lähtötiedoiksi*. Toimii asennetussa sovelluksessa, kun se on avattu ainakin kerran.
+
 ## Pilvi: SharePoint
 
 Kirjaukset tallentuvat aina ensin puhelimeen (IndexedDB) ja siirtyvät pilveen, kun verkko on. Kohde puretaan riveiksi (kohde, kerros, tila, suunnitelman kohta, havainto, tiedosto …), joten kaksi tutkijaa voi kirjata samaan kohteeseen yhtä aikaa.
@@ -94,6 +102,7 @@ for t in tests/test_*.py; do python3 $t; done
 | `test_merkinnat.py` | merkinnät: napautus ei siirrä, lukko, Siirrä, PDF-vienti, arvioidut merkit |
 | `test_raporttipohja.py` | Word-raportti pohjasta (SharePoint-jäljitelmä), kirjaukset ja kuvat raportissa |
 | `test_siirto.py` | kenttälomakkeen vienti ja tuonti Kirjuriin |
+| `test_jako.py` | asennettavuus (Chrome), jaettu kuva kirjaukseksi ja yleiskuvaksi, jaettu taito |
 | `test_taidot.py` | taidon tuonti, oletukset, kysy / älä kysy, Muista, lyhenteet, komennot, Omat opit, lomake, versiohistoria |
 | `test_synkronointi.py` | kaksi laitetta, kuvat, muutokset puolin ja toisin |
 | `test_reitit_laite.py` | kaikki näkymät ilman pilveä, ei JS-virheitä |
