@@ -1,0 +1,565 @@
+# Kuva + sanelu
+
+Mobiilikäyttöinen kenttälomake kuntotutkimuksiin. Kuva ja sanelu ovat lomakkeen ydin. Lomake ohjaa tutkijaa kirjaamaan kentällä ne tiedot, joita AI-raportointityökalu ei voi päätellä kuvista:
+
+- mittausarvot ja niiden vahvistus
+- tutkimuksen kattavuus (tarkastettu / poikkeama / ei pääsyä / ei tutkittu)
+- tutkimussuunnitelman toteutuminen ja pois jätettyjen kohtien syyt
+
+Aineisto viedään ZIP-pakettina, jonka voi antaa AI-työkalulle sellaisenaan.
+
+Sovellus on osa RTA-opinnäytetyön kehitystyötä ja erillinen PBM Kenttälomakkeet -sovelluksesta (Aloitussivu).
+
+## Näkymät
+
+| Näkymä | Tarkoitus |
+|---|---|
+| Uusi kohde | Nimi (voi jättää tyhjäksi, täyttyy lähtötiedoista) ja tutkija → *Jatka lähtötietoihin* |
+| Lähtötiedot | Yksi paikka kaikille lähtötiedoille (`js/lahtotiedot.js`, `#/k/<id>/lahtotiedot`). Kaikki tuontitavat näkyvät kortteina: Clauden lähtötietopaketti (suositus), tarjous tai tutkimussuunnitelma, pohjakuvat, asiakirjat ja piirustukset, syötä itse sekä tulossa oleva projektikansio. Tapoja voi yhdistää, ja jo käytetyt merkitään tehdyiksi. Sivulle pääsee kohteen sivulta milloin tahansa. |
+| Kohde | Työlista: *Seuraavaksi*-kortti (seuraava tekemätön suunnitelman kohta ja Aloita), suunnitelman rivit tilamerkein, huomioitavaa ja viimeisimmät havainnot. Harvemmin tarvittavat (lähtötiedot, yleiskuvat, olosuhdeseuranta, kuntoarvio, suunnitelman muokkaus) ovat *Lisää*-kohdan alla. |
+| Alapalkki | Kohde · Pohjakuva · kamera (keskellä) · Havainnot · Lopeta. Kamerapainike avaa Kuva + sanelun aina samasta paikasta. |
+| Kuva + sanelu | Tavallinen havainto kirjataan loppuun tässä näkymässä: kuvat, sanelu (pidä mikrofonia pohjassa) tai kirjoitus, menetelmä ja tulos. **Seuraava** tallentaa ja aloittaa uuden havainnon samaan paikkaan samalla menetelmällä. **Avaa havainto** avaa havaintokortin. Menetelmä näkyy ja vaihdetaan etsimen alareunan painikkeesta (esim. *RH · 3/6*). |
+| Havaintokortti | Kolme osaa: **1 Havainto** (teksti ja kuvat), **2 Pakolliset tiedot** (sijainti, tulos, menetelmä ja sen kentät) ja taitettu **3 Lisätiedot** (suunnitelman kohta, kuntoarvion osa, muut kentät, alustava tulkinta, poisto). Puutteet näytetään vasta, kun painaa *Valmis*: ensimmäinen painallus näyttää puuttuvat, toinen sulkee kortin puutteista huolimatta. |
+| Mittauspiste (RH) | Yhteen havaintoon kirjataan mittauspisteen kaikki lukemat taulukkona: syvyys, RH, T, absoluuttinen kosteus ja lukupäivä. Ympäröivät olosuhteet kirjataan samalla tavalla omaan taulukkoonsa. Syvyys valitaan siruista (esim. 28 mm, 70 mm), ja rinnakkaiset mittaukset kuvataan samalla syvyydellä. **Lue mittarista** lukee arvot mittarin näytöltä kameralla. |
+| Menetelmän valinta | Ehdotuksina edellinen menetelmä ja tutkimussuunnitelman tekemättömät menetelmät (esim. *Merkkiainekoe 0/1*). Hakukenttä löytää menetelmän nimen tai lyhenteen alusta, eikä välitä isoista kirjaimista tai ääkkösistä (*lampo* → Lämpökuvaus). Jos osumaa ei ole, hausta voi lisätä uuden menetelmän, jolle voi myöhemmin lisätä kenttiä Menetelmät-sivulla. |
+| Menetelmät | Menetelmien lisäys, muokkaus, järjestys, piilotus ja jakaminen tiedostona (etusivu → Menetelmät tai havaintokortti → Muokkaa menetelmiä) |
+| Pohjakuva | Kerrokset, pohjakuva (kuva tai PDF), tilat ja niiden tutkimustilanne, havaintomerkit |
+| Lopeta kohde | Yhteenveto kolmena lukuna (havaintoa / kesken / rajattu) ja puutteet ryhmittäin: suunnitelma, tilat ja havainnot. Kun tiloja on paljon, ne voi merkitä kerralla *ei pääsyä* yhteisellä syyllä. Vienti on aina käytettävissä; avoimet kohdat listataan pakettiin. |
+
+## Kenttäkäytön periaatteet
+
+Tavoite: havainnon kirjaaminen vie saman ajan kuin pelkkä kuvaaminen. Tutkija kuvaa ja puhuu, sovellus täyttää loput.
+
+**Tila ei siirry uudelle menetelmälle.** Uusi havainto saa edellisen havainnon tilan vain, kun menetelmä on sama (esim. RH-pisteiden sarja Seuraava-painikkeella). Kun menetelmä vaihtuu, tila valitaan tai sanellaan uudelleen; edellinen tila näkyy pikavalinnassa ensimmäisenä vaihtoehtona.
+
+**Kolme vähimmäistietoa.** Havainnolle tarvitaan kuva, havainto (kirjoitettu tai saneltu) ja tila. Kameranäkymän alareunassa ne näkyvät kolmena merkkinä (Kuva, Havainto, Tila), jotka muuttuvat vihreiksi, kun tieto on saatu. Menetelmä ja tulos ovat yhdellä tiiviillä rivillä tekstikentän alla: ne täyttyvät sanelusta tai oletuksesta (katkoviivareuna = automaattinen), ja niitä voi vaihtaa yhdellä napautuksella. Menetelmän omat kentät (esim. RH-mittaukset) ovat Mittaukset-painikkeen takana.
+
+**Varma kirjaus.**
+- Kaikki tallentuu heti. Siirtymä (Seuraava, havaintokortti, sulje) odottaa, että viimeinen kuva on tallennettu, sanelun teksti saatu ja tunnistus (menetelmä, tila, kentät) tehty, joten nopeakaan napautus ei jätä tietoja täyttämättä. Myös näkymästä poistumisen jälkeen saapuva sanelu tallentuu havaintoon.
+- Jos sanelusta ei saada tekstiä, puhelin värisee ja näkyy ilmoitus *Sanelusta ei saatu tekstiä*.
+- Puhelimen takaisin-ele sulkee avoimen ikkunan (esim. sijainnin valinta) eikä vaihda näkymää. Näkymän vaihtuessa avoimet ikkunat suljetaan, jotta ne eivät muuta toisen näkymän tietoja.
+- Kameranäkymästä havaintokortille ja takaisin palaa samaan havaintoon.
+- Etusivu ja kohteen tiedot näyttävät, onko kohde viety ZIP-pakettina ja onko vientiä uudempia muutoksia. Tiedot ovat vain puhelimessa, joten paketti kannattaa viedä kenttäpäivän päätteeksi.
+
+**Tila ilman käsityötä.** Tila tulee ensisijaisesti automaattisesti:
+
+1. edellisestä havainnosta (merkintä *edellinen*)
+2. sanelusta: tilan tunnus ("tilassa A 101") tai yksiselitteinen nimi ("keittiössä"). Jos samannimisiä tiloja on useita (esim. kymmenen WC:tä), nimestä ei arvata.
+3. kuvasta: kun kuvaat oven tilakyltin tai pohjakuvan tilanumeron, sovellus lukee kuvasta kohteen tilojen tunnukset (merkintä *kuvasta*). Vain kohteessa olevat tunnukset kelpaavat. Luku tehdään taustalla, eikä se koske tutkijan itse valitsemaa tilaa.
+
+Jos tila pitää valita itse, sijaintinäkymässä on ensin viimeksi käytetyt tilat ja haku (tunnus tai nimi, esim. "wc 12"). Sen alla on pohjapiirros: tilan merkin napautus valitsee tilan ja kohdan, ja haulla valittu tila kohdistetaan ja zoomataan pohjapiirroksessa. Rakenneosa on valinnainen.
+
+**Tiedot täyttyvät itse (`js/autofill.js`)**
+
+| Tieto | Mistä |
+|---|---|
+| Tila | Sanelusta: olemassa olevan tilan nimi tai tunnus ("keittiössä", "K03"), tai yleinen tilan nimi, jolloin tila luodaan ("kylpyhuoneessa" → uusi tila Kylpyhuone). Muuten edellisestä havainnosta. |
+| Rakenneosa | Sanelusta ("lattian rajassa" → Alapohja / lattia, "ulkoseinän" → Ulkoseinä). Ensimmäinen maininta ratkaisee. |
+| Tulos | Sanelusta: vauriota kuvaavat sanat → Poikkeama ("hilseilee", "kosteusvaurio", "irtoaa"); "ei huomautettavaa", "kunnossa", "ehjä" ja kieltomuodot ("ei homeen merkkejä") → Ei huomautettavaa. |
+| Menetelmä | Sanelusta ("RH-mittaus", "rakenneavaus", "näyte", "merkkiainekoe"…). Muuten aistinvarainen tarkastelu; Seuraava jatkaa samalla menetelmällä. |
+| Suunnitelman kohta | Menetelmän ja tilan perusteella; menetelmä, jota ei ole suunnitelmassa, merkitään "ei suunnitelmassa". |
+| Mittauspisteen tunnus | Juokseva: M1 → M2, RA1 → RA2 (edellisen tunnuksen muoto säilyy). |
+| Mittalaite, tasaantumisaika | Edellinen arvo tältä laitteelta, myös uusissa kohteissa. |
+| Syvyys (RH) | Syvyyssarja opitaan edellisestä pisteestä (esim. 2 × 28 mm, 2 × 70 mm) ja vaihtuu itse. |
+| Lukupäivä | Kuvauspäivä. |
+| Mittausten vahvistus | Varmat kameraluvut ja itse kirjoitetut arvot ovat vahvistettuja. Vain epävarmat lukemat tarkistetaan. |
+
+**Sanelusta menetelmän kenttiin (`js/fieldfill.js`).** Sanelusta täyttyvät myös menetelmän omat kentät. Esimerkiksi sanelu *"RH-mittaus porareiästä, Vaisala HM40, tasaantumisaika kolme vuorokautta. 30 millissä 78 prosenttia 21,5 astetta, rinnakkainen 79 prosenttia. 70 millissä 84 prosenttia 21,3 astetta. Huoneilma 32 prosenttia 22 astetta."* tuottaa:
+
+- mittalaitteeksi Vaisala HM40 (muistetaan seuraavaan havaintoon) ja tasaantumisajaksi 72 h (vuorokaudet muunnetaan tunneiksi)
+- mittausrivit syvyyksittäin: 30 mm 78 % 21,5 °C, 30 mm 79 % ja 70 mm 84 % 21,3 °C. Rinnakkainen lukema tulee omaksi rivikseen samalle syvyydelle.
+- ympäröiviin olosuhteisiin 32 % 22 °C (sanat *huoneilma*, *olosuhteet*, *sisäilma* tai *ympäröivä* ohjaavat arvot olosuhdetaulukkoon seuraavaan syvyyteen asti).
+
+Muut menetelmät toimivat samoin: pintakosteus (laite, lukema, vertailuarvo, asteikko), rakenneavaus (tunnus RA3, rakennekerrokset paksuuksineen, esim. "muovimatto, tasoite 5 mm, betoni 80 mm, eps 100 mm"), materiaalinäyte (tunnus, tyyppi, materiaali), merkkiainekoe (aine, injektointikohta, painesuhde, tulos), lämpökuvaus (kamera, sisä- ja ulkolämpötila, paine-ero) ja painesuhde. Itse lisätyt menetelmät saavat avainsanansa kentän nimestä ja yksiköstä. Numerot tunnistetaan myös sanoina ("kolme", "kaksikymmentäyksi pilkku viisi", "miinus 12").
+
+Sanelusta tullut arvo näkyy kortissa merkinnällä *sanelusta*, ja rivi on merkitty mikrofonilla. ZIP-paketissa ne lukevat kohdassa *tunnistettu sanelusta*, ja taulukon rivien lähde on *sanelu*. Tutkijan itse kirjoittamaa arvoa sanelu ei muuta. Kun tutkija muokkaa tai poistaa yhdenkin sanelusta tehdyn rivin, taulukko on hänen, eikä sanelu enää muuta sitä. Puheentunnistus voi kuulla numeron väärin, joten sanelusta tulleet lukemat kannattaa vilkaista kortissa.
+
+**Vähimmäistiedot ja kentät sanelun mukaan.** Menetelmän kentät eivät ole valmiiksi tyhjinä lomakkeena, vaan ne syntyvät sanelusta. Kortissa näkyvät täytetyt kentät ja menetelmän vähimmäistiedot. Vähimmäistiedot ovat Menetelmät-sivulla *pakolliseksi* merkityt kentät, ja niitä voi muokata. Puuttuva vähimmäistieto on korostettu, ja sen kohdalla on esimerkkilause, esim. *Puuttuu · sano esim. "tasaantumisaika 3 vrk"*. Muut kentät saa esiin napauttamalla (+ Ympäröivät olosuhteet). Kortin otsikossa näkyy *Vähimmäistiedot 3/4*. Kameranäkymässä puuttuvat vähimmäistiedot näkyvät tekstikentän alla heti sanelun jälkeen, esim. *RH · puuttuu: mittalaite, tasaantumisaika – Sano esim. "mittalaite Vaisala HM40"*, joten tutkija voi sanoa puuttuvan tiedon saman tien. Puute poistuu, kun tieto on saatu. Lähtötarkistus muistuttaa vielä puuttuvista ennen lähtöä.
+
+**Sanasto.** Valmiina on laaja sanasto: menetelmien avainsanat (mm. porareikä, tasaantumisaika, Gann, Tramex, mikrobinäyte, typpivety, lämpökamera, paine-ero), poikkeamaa ja kunnossa olevaa kuvaavat sanat (mm. homekasvu, kondenssi, lahonnut, vastakaato, kylmäsilta / kuiva, tiivis, ei todettu), noin 70 rakenneosasanaa, yli 80 tilannimeä, yleiset mittalaitteet (Vaisala, Gann, Tramex, Protimeter, Testo, Flir ...) ja noin 60 materiaalia rakennekerroksia varten. Kaikkea ei siis tarvitse opettaa. Sanalistat ovat tiedostojen `js/autofill.js` ja `js/fieldfill.js` alussa.
+
+**Oppiminen (`js/learn.js`).** Kun avainsanat eivät tunnista menetelmää, sovellus ehdottaa sitä oppimansa perusteella (merkintä *opittu*). Malli oppii valmiista havainnoista, millainen sanelu kuuluu millekin menetelmälle: tutkijan itse valitsema tai korjaama menetelmä painaa enemmän (2) kuin automaattisesti tunnistettu ja hyväksytty (0,5), jottei malli vahvista omia virheitään. Malli on naiivi Bayes -luokittelija, joka toimii kokonaan laitteella. Piirteinä ovat sanojen alut (taivutusmuodot), yhdyssanojen osat, numerot ja yksiköt sekä rakenneosa, ja jokainen sana antaa yhden äänen. Tilojen nimet jätetään pois. Ehdotus tehdään vasta, kun esimerkkejä on vähintään 6 ja todennäköisyys on vähintään 0,85 (`RAJAT`). Menetelmät-sivulla näkyy esimerkkien määrä menetelmittäin, ja oppimisen voi nollata. Malli kulkee Vie menetelmät -tiedostossa, ja tuotaessa se yhdistetään laitteen malliin, joten tiimi voi kerätä yhteisen mallin.
+
+Automaattinen arvo näkyy merkinnällä *sanelusta* eikä koskaan korvaa tutkijan itse valitsemaa arvoa. Yksi napautus muuttaa sen. ZIP-paketti kertoo, mitkä tiedot on tunnistettu sanelusta. Tunnistus on tarkoituksella varovainen: epäselvässä tapauksessa arvo jää tyhjäksi ja lähtötarkistus muistuttaa siitä. Sanalistoja voi täydentää tiedostossa `js/autofill.js`.
+
+**Muut periaatteet**
+
+- **Yksi näkymä tavalliselle havainnolle.** Kuva, sanelu, menetelmä ja tulos kameranäkymässä. Havaintokortille vain, kun menetelmällä on täytettäviä kenttiä.
+- **Sanelu pitämällä pohjassa.** Vapautus lopettaa ja lisää tekstin. Lyhyt napautus lukitsee sanelun päälle; toinen napautus lopettaa. Ilman verkkoa sanelu tallentuu äänitteenä.
+- **Puutteet näkyvät heti** (Kortti-painikkeen luku, kortin yläosa, kohdenäkymän merkit), ja **lähtötarkistuksessa** puuttuvan tuloksen voi valita kuvan vierestä yhdellä napautuksella.
+- **Mitään ei menetetä.** Kaikki tallentuu heti, myös kesken olevat kuvat ennen siirtymää.
+- **Näyttö pysyy päällä** kuvatessa, ja puhelin värähtää kuvan otossa, sanelun alussa ja lopussa, kun kameraluku on varma ja kun syvyys vaihtuu.
+
+## Tilojen tunnistus pohjakuvasta (`js/planrooms.js`)
+
+Kun kerrokseen lisätään pohjakuva, sovellus etsii siitä tilojen nimet ja tunnukset ja ehdottaa tiloja valmiiksi sijoitettuina:
+
+- **PDF, jossa on tekstiä** (CAD-tuloste): nimet luetaan suoraan PDF:n tekstistä. Tämä on nopea (alle sekunti) ja tarkka.
+- **Skannattu pohjakuva tai valokuva paperipiirustuksesta** (kuva tai kuvana tallennettu PDF): kuvasta etsitään ensin tekstin näköiset kohdat (merkin kokoiset tummat alueet rivissä). Ne leikataan irti, suurennetaan ja luetaan tekstintunnistuksella (Tesseract, suomi). Näin pienetkin tunnukset löytyvät viivojen seasta, eivätkä varjot tai epätasainen valo haittaa. Lyhyet sanat, joita ei tunnisteta, luetaan uudelleen kolmella eri kuvankäsittelyllä, ja tulokset äänestetään. Piirustuksen kierto (0/90/180/270°) päätellään itse. Siisteistä skannauksista luetaan lisäksi koko sivu, ja tulokset yhdistetään. Ensimmäisellä kerralla ladataan suomen kielidata (noin 1 Mt), ja sen jälkeen tunnistus toimii myös ilman verkkoa.
+- **Huonekortit (ArchiCAD, Revit, AutoCAD)**: suunnitteluohjelman huonekortti on muotoa "A101 aula" ja sen alla pinta-ala "139,0". Kun PDF:ssä tai kuvassa on vähintään viisi korttia pinta-aloineen, tilat luetaan vain korteista. Tilanumero tulee tunnukseksi ja kortin teksti nimeksi, olipa se sanastossa tai ei. Vain yksiselitteiset lyhenteet avataan (wc, pkh, prsh A1 → Porrashuone A1, tk, VSS). Monimerkityksiset (rk, s, spk) jätetään sellaisinaan, ja ne voi nimetä (opitaan). Ovien, seinien ja alakattojen tyyppitunnuksia (O1, VS3, AK7, K7) ei tulkita tiloiksi, eikä ovimerkintöjen tilanumero ilman nimeä tee tilaa.
+- **Kierretty PDF**: jos koko piirustus on PDF:ssä kierretty, tekstit luetaan yleisimmän tekstisuunnan mukaan.
+
+Tulkinta tuntee tavalliset lyhenteet (MH, OH, KT, K, R, KPH, PH, S, ET, VH, WC, TK, AK, LJ, IV-KH, ...) ja tilannimet, myös kahdelle riville jaetut. Numeroitu lyhenne (MH1, MH2) tulee tunnukseksi. Lyhyet ja moniselitteiset lyhenteet (K, S, R, TK, LH, ...) hyväksytään, jos lähellä on pinta-ala tai tilanumero, tai jos pohjassa on muuten selvästi tilalyhenteitä ja lyhenne on tilojen alueella. Näin mitat ja nimiöruudun tekstit eivät tulkitu tiloiksi. Tekstintunnistuksen tyypilliset sekaannukset korjataan (WH2 → MH2, CH → OH, IK → TK). Lähellä oleva tilanumero (esim. 101, A12) tulee tunnukseksi.
+
+**Asunnot.** Jos pohjassa on useita asuntotyyppimerkintöjä (3H+K 73,0 m²), tilat ryhmitellään asunnoittain, ja tunnukseen tulee asunnon numero (As3 MH1). Asunnon rajat päätellään niin, että samat tilat ovat kaikissa asunnoissa samassa kohdassa. Toistuvan pohjan ansiosta:
+- väärin luettu tunnus korjataan muiden asuntojen mukaiseksi
+- asunnosta puuttuva tila lisätään, jos samassa kohdassa on tekstiä, jota ei saatu luettua (merkintä *päätelty muista samanlaisista asunnoista*).
+
+Asunnon tunnuksen voi vaihtaa (As3 → C12) minkä tahansa sen tilan valikosta, jolloin asunnon kaikkien tilojen tunnukset päivittyvät.
+
+**Sanasto ja suodatus.** Sanastossa on asuntojen, varastojen, teknisten tilojen ja julkisten rakennusten tavalliset lyhenteet (KE, E, KUISTI, LASIK, IRTV, VSS ...). Pinta-ala tunnistetaan myös ilman yksikköä, kun luku (11.9) on suoraan nimen alla. Kalusteiden ja laitteiden merkinnät (JK, LVV, VAR kaapissa) erotetaan tekstin koon perusteella: tilojen nimet ovat piirustuksessa samankokoisia, kalustemerkinnät pienempiä. Yksittäinen kirjain (E, K, S) hyväksytään vain, jos sen ympärillä on tyhjää lattia-alaa. Vinoviivalla tai päällekkäin merkitty tila (AK / PKH) on yksi tila.
+
+### Tarkistus vain epävarmoille
+
+Kymmenien tai satojen tilojen tarkistaminen yksitellen ei ole järkevää, joten tunnistus jakaa tilat kahteen ryhmään:
+
+- **Varmat lisätään suoraan.** Varma on esimerkiksi PDF:n tekstistä luettu nimi, nimi pinta-alan tai tilanumeron vieressä, selvästi luettu tunnettu lyhenne tai tila, joka on samassa kohdassa vähintään kolmessa samanlaisessa asunnossa. Ehdot ovat tarkoituksella tiukat: on parempi kysyä kuin lisätä väärin.
+- **Epävarmat näytetään tarkistettavaksi.** Kunkin yläpuolella on rivin levyinen leike pohjakuvasta, jossa luettu kohta on kehystetty (kierretyssä kuvassa oikein päin); napautus näyttää laajemman alueen ja tilan rajat, ja syy, miksi tila on epävarma. Päätös on yksi napautus: ✓ tila tai ✕ ei tila. Nimen voi korjata samalla.
+
+Jos epävarmoja ei ole, tilat lisätään ilman tarkistusnäkymää. Suoraan lisätyt tilat voi halutessaan avata tarkistettavaksi (Näytä myös suoraan lisättävät).
+
+**Luottamus säilyy, koska suoraan lisätty tila on merkitty.** Pohjakuvasta luettu tila on *tunnistettu* (katkoviivareunus pohjapiirroksessa), kunnes tutkija on nähnyt sen nimen. Tila vahvistuu, kun se valitaan havainnon sijainniksi, kun sitä muokataan tai kun tilan valikosta kuitataan *Nimi on oikein*. Tarkistus tehdään siis kentällä samalla, kun tilaa käytetään, eikä erillistä tarkistusvaihetta tarvita. ZIP-paketissa jokaisella tilalla on `nimen_lahde` ja `nimi_vahvistettu`. LUE_MINUT ohjeistaa raportin laatijaa, ettei vahvistamatonta nimeä esitetä tutkijan toteamana. Tilat, joissa ei käyty, voi lähtötarkistuksessa merkitä kerralla rajauksiksi yhteisellä syyllä.
+
+### Oppiminen
+
+Sovellus oppii laitteella (`ks_tilaoppi`), mitä kunkin pohjakuvamerkinnän lyhenne tarkoittaa:
+
+| Tapahtuma | Vaikutus |
+|---|---|
+| Epävarma tila hyväksytään (✓) | +1 vahvistus |
+| Nimi korjataan tai tuntematon lyhenne nimetään | opittu nimi, +2 |
+| Tila käytetään havainnon sijaintina, sitä muokataan tai se kuitataan | +1 vahvistus |
+| Epävarma tila hylätään (✕) tai vahvistamaton tila poistetaan | +1 hylkäys |
+
+Kun merkinnällä on vähintään kolme vahvistusta eikä yhtään hylkäystä, se lisätään jatkossa suoraan. Esimerkiksi tuntematon "PP" nimetään kerran *Puuvarastoksi* ja hyväksytään kerran, ja siitä eteenpäin se lisätään ilman kysymistä. Usein hylätty oma merkintä ohitetaan. Sanaston lyhenne (WC, MH) ei katoa hylkäyksistä vaan siirtyy tarkistettavaksi. Yksittäisiä kirjaimia ei opita, koska samaa kirjainta käytetään piirustuksissa myös kalusteissa. Opitut lyhenteet näkyvät Menetelmät-sivulla, ne voi nollata, ja ne kulkevat Vie menetelmät -tiedostossa, joten tiimi voi koota yhteisen sanaston.
+
+Rajoitus: lyhenne opitaan ilman asiayhteyttä. Jos sama lyhenne tarkoittaa eri piirustuksissa eri asiaa (AK = autokatos tai apukeittiö), se kannattaa jättää vahvistamatta, jolloin se pysyy tarkistettavana.
+
+Tilojen rajoja ei tunnisteta: tila on pohjapiirroksessa merkki nimen kohdalla.
+
+## Pohjapiirroksen zoomaus (`js/zoom.js`)
+
+Pohjapiirrosta voi zoomata sekä pohjapiirrosnäkymässä että sijaintia valittaessa:
+
+- kahden sormen nipistys zoomaa (jopa 10-kertaiseksi) ja yhden sormen veto siirtää kuvaa
+- kaksoisnapautus zoomaa kohtaan, ja toinen kaksoisnapautus palauttaa koko kuvan
+- painikkeet: + ja − zoomaavat, kuvakepainike palauttaa koko kuvan ja ⤢ avaa pohjan koko näytölle (pohjapiirrosnäkymässä)
+- tietokoneella hiiren rulla zoomaa
+
+Tilamerkit pysyvät samankokoisina zoomattaessa, joten tiheäkin pohja, jossa on kymmeniä tiloja, aukeaa luettavaksi. Napautus toimii zoomattuna normaalisti, mutta veto ei laukaise napautusta. Zoomaus ja kohta säilyvät, kun näkymä päivittyy (esimerkiksi tilan merkinnän jälkeen). Sijaintia valittaessa tilamerkin napautus valitsee samalla tilan, joten pitkää tilaluetteloa ei tarvitse selata.
+
+## Kuvien lisääminen aiempaan havaintoon
+
+Kun havaintoja on paljon, oikea havainto löytyy usealla tavalla:
+
+- **Kameranäkymä:** vasemman yläkulman havaintotunnus (esim. *Uusi havainto ▾*) on painike. Se avaa haun, jossa saman tilan havainnot ovat ensimmäisinä. Valinnan jälkeen kuvat ja sanelu menevät valittuun havaintoon. Seuraava-painikkeen jälkeen näkyy pikapainike *← Lisää kuvia: H05*, jos edellisestä havainnosta jäi kuva ottamatta.
+- **Havainnot-lista:** haku kohdistuu tunnukseen (H05), mittauspisteen tunnukseen (M3), tilaan, menetelmään, tulokseen ja saneluun, ja kaikkien hakusanojen on osuttava (*keittiö lattia*). Isot kirjaimet ja ääkköset eivät haittaa. Lista näytetään joko uusimmasta alkaen tai tiloittain ryhmiteltynä, ja *Puutteelliset* näyttää vain havainnot, joista puuttuu tietoja. Jokaisen rivin kamerapainike avaa kameran suoraan kyseiseen havaintoon.
+- **Pohjapiirros:** havaintomerkin ikkunassa on *Lisää kuva*.
+- **Liitä kuvia galleriasta** (Havainnot-lista): puhelimen omalla kameralla otetut kuvat liitetään havaintoihin ottoajan perusteella. Ottoaika luetaan kuvan EXIF-tiedoista. Kuvalle ehdotetaan havaintoa, jonka kirjaamisen aikaan kuva otettiin, ja ehdotuksen voi vaihtaa. Kuvat, joille ei löydy havaintoa, liitetään uuteen havaintoon (peräkkäin otetut samaan).
+
+## RH-mittauspiste ja kameraluku
+
+Kentällä:
+
+1. Kuva + sanelu → valitse menetelmäksi *Rakenteen RH-mittaus* → Valmis.
+2. Havaintokortilla: mittauspisteen tunnus, mittalaite ja tasaantumisaika (laite ja aika muistetaan seuraavaan pisteeseen).
+3. **Lue mittarista**: valitse syvyys yläreunasta (*+ Uusi*, esim. 28) ja osoita kameralla mittarin näyttöä. Rajausta ei tarvitse tehdä itse:
+   - Sovellus paikantaa näytön kamerakuvasta (kehys näytön ympärillä).
+   - Kun puhelin pysyy paikallaan, arvot luetaan ja näytetään kameranäkymän alareunassa reaaliajassa.
+   - Kun luenta on varma (RH täsmää absoluuttiseen kosteuteen tai kastepisteeseen ja kaksi luentaa antaa samat arvot), kehys ja laukaisin muuttuvat vihreiksi. Laukaisin tallentaa juuri luetun kuvan ja arvot riviksi heti.
+   - Jos laukaisinta painetaan ennen varmaa luentaa, kuva tallennetaan ja arvot luetaan taustalla perusteellisemmin. Epävarmat rivit merkitään oranssilla.
+   - Kuvaa rinnakkaiset mittaukset samalla syvyydellä, vaihda syvyys (esim. 70) ja jatka.
+4. Oranssilla merkityt arvot ovat epävarmoja: napauta riviä, vertaa arvoja näytön kuvaan ja kuittaa. Epäselvät kuvat hylätään heti ja pyydetään kuvaamaan uudelleen.
+5. Lukupäivä täyttyy automaattisesti kuvauspäivällä ja on muokattavissa (esim. jos lukemat kirjataan jälkikäteen).
+6. Kortin yhteenveto näyttää syvyyksittäin lukemien määrän ja keskiarvot.
+7. **Ympäröivät olosuhteet**: *Lue mittarista* toimii samoin (RH, T, a, lukupäivä).
+8. Kun lukemat on tarkistettu, valitse *Olen tarkistanut mittausarvot*. Vahvistus ei onnistu, jos rivejä on kesken tai tarkistamatta.
+
+Rivin voi lisätä myös käsin (*Rivi käsin*), esimerkiksi jos mittarin näyttöä ei voi kuvata.
+
+**Tunnistus** on sama kuin PBM Kenttälomakkeissa (`js/lukulaite-ocr.js`, Vaisala HM40 -sarjan näkymä T, RH, Td, Tw, a). Ydin vertaa RH:ta kastepisteestä ja absoluuttisesta kosteudesta laskettuun arvoon ja merkitsee ristiriitaiset lukemat epävarmoiksi. Tiedosto on kopio: kun tunnistusta parannetaan, päivitä se molempiin sovelluksiin. Tähän kopioon on lisätty vain `window.LukulaiteOcr.core`-vienti. Kuva + sanelu lisää ytimen ympärille:
+
+- **Näytön paikannus** (`findDisplay`, `js/meter.js`): näytön sävy mitataan kuvan keskeltä (sinne kameraa osoitetaan), joten paikannus toimii, vaikka valkotasapaino tekisi näytöstä sinertävän tai kellertävän. Näytöksi hyväksytään yhtenäinen, suorakulmainen alue, joka ei jatku kuvan reunoille. Varalla on kirkkaan ja harmaan alueen sääntö. Ajetaan pienennetystä kamerakuvasta noin 6 kertaa sekunnissa (~20 ms/kerta).
+- **Tarkennettu rajaus** (`lcdCrop`): rajaus kiristetään pelkkään nestekidenäyttöön, koska mittarin kehys ja runko sotkevat tunnistuksen kynnysarvon.
+- **Kevyt luenta** (`recognizeQuick`, lisätty tunnistusytimen kopioon): enintään 2 esikäsittelyvarianttia reaaliaikaisessa luennassa, 6 taustatunnistuksessa. Jos kastepisteen miinusmerkki katoaa luennassa (−1,4 → 1,4), johdonmukaisuus arvioidaan absoluuttisella kosteudella eikä oikeita RH- ja T-arvoja "korjata" vääriksi. **Tämä korjaus kannattaa viedä myös PBM Kenttälomakkeiden tunnistukseen.**
+
+**Testisivu:** `kameraluku-testi.html` (sama osoite kuin sovellus, esim. …/kameraluku-testi.html). Valitse puhelimella otettuja kuvia mittarin näytöstä, niin sivu näyttää paikannetun näytön, rajauksen, luetut arvot ja tunnistetun tekstin. Kuvat eivät tallennu. Sivu sopii epäonnistuneiden tapausten keräämiseen ja tunnistuksen kehittämiseen.
+
+**Milloin luenta on varma:** RH täsmää absoluuttiseen kosteuteen tai kastepisteeseen, vähintään kaksi eri esikäsittelyllä tehtyä luentaa antaa täsmälleen samat arvot ja näyttö on kamerakuvassa riittävän suuri (reaaliaikaisessa luennassa vähintään noin 420 px leveä, taustatunnistuksessa 300 px). Fysikaalinen ristiintarkistus ei yksinään erota pieniä lämpötilavirheitä (esim. 22,6 / 22,8), koska RH muuttuu niissä vähän. Siksi pieneltä näytöltä luetut arvot merkitään aina tarkistettaviksi.
+
+Testattu: kolme oikeaa mittarikuvaa (eri valkotasapaino), sininen, kellertävä ja vihertävä sävy, hämärä, kaukana oleva mittari ja heijastus näytössä luetaan oikein. Selvästi vinossa (n. 6°) kuvassa osa arvoista voi mennä väärin, mutta luentaa ei silloin hyväksytä varmaksi, vaan rivi merkitään tarkistettavaksi.
+
+**Ilman verkkoa:** tekstintunnistuksen moottori (Tesseract.js 5.1.1) ja kielidata ladataan ensimmäisellä kameraluvulla ja tallennetaan laitteelle. Tee ensimmäinen luku verkkoyhteydessä, jolloin kameraluku toimii jatkossa myös kellarissa.
+
+**ZIP-paketissa** lukemat ovat taulukkona (havainnot.md ja havainnot.json), jokaisella rivillä on lähde (kameraluku / käsin / korjattu käsin) ja näytön kuva (`kuvat/H01_lukema_1.jpg`). Laskettu yhteenveto (keskiarvo, vaihteluväli) on merkitty sovelluksen laskemaksi, ei mittaustulokseksi.
+
+Taulukkokentän voi lisätä mihin tahansa menetelmään menetelmäeditorissa (tyyppi *Taulukko*): sarakkeet (numero, teksti, päivämäärä), pakolliset sarakkeet, ryhmittelysarake sekä kameraluvun RH-, lämpötila- ja absoluuttisen kosteuden sarakkeet.
+
+**Menetelmien päivitys:** oletusmenetelmällä on versionumero (`versio` tiedostossa `js/methods.js`). Kun versio nousee, laitteelle tallennettu vanhempi versio korvataan uudella käynnistyksen yhteydessä. Itse lisätyt menetelmät eivät muutu.
+
+## Kuntoarvio (`js/kuntoarvio.js`, `js/kuntoarvio-data.js`)
+
+Kohteen tason arvio rakennusosittain PBM:n kuntoarvion raporttipohjan järjestyksessä (alueosat, talo-osat, tilaosat, LVIA, sähkö). Avataan kohteen etusivulta (**Kuntoarvio**) tai tutkimussuunnitelman kohdasta *Kuntoarvio*. Tarjouksen sana "kuntoarvio" tunnistuu suunnitelmaan.
+
+- **Perustiedot ja rajaukset:** rakennustyyppi, rakennusvuosi, pinta-ala, huoneistot, perustukset, runko, julkisivu, vesikatto, lämmitys, tehdyt korjaukset, rajaukset ja PTS-jakso (oletus 10 v).
+- **Rakennusosa** sisältää:
+  - tarkistuslistan (muistilista, ruksattavissa)
+  - kuntoluokan 1–5 tai *Ei koske kohdetta*
+  - rakenteen tai materiaalin käyttöikätaulukosta sekä rakennus- tai uusimisvuoden
+  - huomiot ja toimenpide-ehdotuksen (sanelu)
+  - merkinnät *Välittömästi korjattava*, *Lisätutkimus* ja (LVIA/sähkö) *Asiantuntija-arvio suositeltava*
+  - havainnot (*Kuva + sanelu tähän osaan*)
+  - *Seuraava* vie seuraavaan arvioimattomaan osaan.
+- **Käyttöikälaskelma:** "Tekninen käyttöikä 40 v → saavutetaan 2045 (jäljellä 19 v)", tarkastusväli, kunnossapitojakso ja lähde. Vuotena käytetään rakennusvuotta, jos osalle ei ole annettu omaa vuotta.
+- **PTS-ehdokkaat:** osat, joiden käyttöikä saavutetaan PTS-jakson aikana, ja osat, joiden kuntoluokka on 1–2.
+- **LVIA ja sähkö:** tarkistuslistat on kirjoitettu rakennusteknisen arvioijan muistilistaksi (pintapuolinen arvio raporttipohjan esipuheen mukaisesti). *Asiantuntija-arvio suositeltava* menee lisätutkimuksiin.
+- **Huoneistojen märkätilat:** märkätilakartoituksen yhteenveto (puutteet, suurin pko-arvo) ja kuntoluokan ehdotus. Ehdotus on apu, ja kuntoluokan päättää arvioija.
+- **Havainnot rakennusosiin:** havainnon rakennusosa tunnistetaan sanelusta (esim. "räystäskourut" → Vesikattovarusteet) tai valitaan havaintokortilla.
+- **Lähtötarkistus:** näyttää arvioimatta jääneiden osien määrän yhtenä kohtana.
+- **Vienti:** ZIP-paketissa (`kuntoarvio` JSON:ssa ja oma luku `havainnot.md`:ssä) osat ovat raporttipohjan järjestyksessä.
+
+**Käyttöikätaulukko** on Sanasto-sivulla (Kuntoarvio → Käyttöiät). Rivin muoto on `osa | nimike | käyttöikä | tarkastusväli | kunnossapitojakso | lähde`. Oletuksena taulukossa ovat PBM:n kuntoarvion liitteen 1 rivit (lähde *PBM liite 1*) ja raporttipohjan tekstien käyttöiät (lähde *PBM raporttipohja*). Taulukkoa voi täydentää KH 90-00403:sta, ja lähteen merkitseminen riville on suositeltavaa.
+
+Rakennusosassa voi olla useita rakenteita (esim. parketti, muovimatto ja laatoitus). Jokaiselle annetaan oma vuosi ja tarvittaessa oma käyttöikä, jos rakennetta ei ole käyttöikätaulukossa. Kuntoluokka annetaan koko osalle. Valintalista tulee käyttöikätaulukosta ja Sanasto-sivun listasta *Rakenteet ja materiaalit*; listaan voi myös kirjoittaa vapaasti.
+
+## Märkätilakartoitus (menetelmä `mtk`)
+
+Tarkistuslomake: yksi havainto = yksi märkätila (pesuhuone, sauna, erillinen WC tai keittiön allaskaappi). Lomake perustuu yrityksen aiempaan märkätilakartoituksen tarkistuslistaan.
+
+- **Asunto** ja **märkätilan tyyppi** päätellään tilasta (esim. tila "A1 KH" → asunto A1, pesuhuone) tai sanelusta ("asunto B 4, sauna"). Asunto muistetaan seuraavaan havaintoon.
+- Näkyvät kohdat riippuvat tyypistä. Esimerkiksi tulvakynnys, lattiakaivo ja kalusteet näkyvät vain pesuhuoneessa ja WC:ssä, ja keittiöllä on allaskaappi, tulvakaukalot ja kaatumaeste.
+- Valinnat ovat sirurivejä (yksi napautus). Sanelu täyttää kohdat lauseenosittain, esim. "saumoissa rakoja ja kaadot riittävät, ei tulvakynnystä, lattian pko 45 vertailu 20".
+- **Muut kohdat kunnossa** merkitsee tyhjät tarkistuskohdat kunnossa-arvolla, joten saneltavaksi jäävät vain puutteet.
+- Puute tarkistuskohdassa (esim. saumoissa rakoja) asettaa tulokseksi Poikkeama, ellei tutkija ole valinnut tulosta itse.
+- Vähimmäistiedot ovat asunto, märkätila, lattian pko-arvo ja vertailuarvo.
+- Tutkimussuunnitelman määrä lasketaan asuntoina (asunnossa voi olla useita märkätiloja).
+- Kun märkätilakartoitus on valittu, sanelu "pko 45" ei vaihda menetelmäksi pintakosteuskartoitusta.
+
+Kentän ehdot ovat menetelmän määrittelyssä: `kun` (näkyy vain tietyllä tyypillä), `okv` (kunnossa-arvo), `ow` (valinnan sanelusanat) ja `tilasta` (päätellään tilan nimestä).
+
+## Tutkimussuunnitelma PDF:stä (`js/planimport.js`)
+
+Tarjouksen tai tutkimussuunnitelman PDF luetaan laitteella (pdf.js, ei verkkopalvelua). Uusi kohde alkaa siitä: **Uusi kohde → Valitse tutkimussuunnitelma (PDF)**, jolloin kohde luodaan PDF:n nimellä, osoitteella ja projektinumerolla ja suunnitelman kohdat tarkistetaan heti. *Ei suunnitelmaa* luo kohteen pelkällä nimellä. Olemassa olevaan kohteeseen: tai **Tutkimussuunnitelma → Tuo tarjouksesta tai suunnitelmasta (PDF)**.
+
+- Kohteen tiedot: *Kohde*, *Osoite* ja *Projektinumero* täytetään tyhjiin kenttiin.
+- Kohdat luetaan osiosta, joka alkaa otsikosta *Tutkimusten sisältö*, *Esitämme … tehtäväksi*, *Tarjous sisältää* tai *Sisältö*, ja päättyy esim. otsikkoon *Näytteenottovälineet*, *Tulosten toimitus* tai *Kustannus*.
+- Luettelon pääkohta on suunnitelman kohta; sisennetyt alakohdat ovat sen tarkennuksia. Alakohdan näytteet (esim. "mikrobinäytteitä 1 kpl / avaus") ovat oma kohta, ja määrä kerrotaan avausten määrällä.
+- Määrä: "4 kpl", vaihteluvälistä pienempi ("3–4 tilaa" → 3), alakohtien summa tai alakohtien lukumäärä (esim. paine-erojen mittausvälit).
+- Ilman luetteloa teksti luetaan virkkeittäin. *Optio*-kohdat näytetään valitsemattomina, ja kohta, joka tehdään toisen yhteydessä, on valitsematon.
+- Tutkija tarkistaa ehdotukset (valinta, menetelmä, määrä, tarkennus) ennen lisäämistä.
+
+Menetelmät tunnistetaan menetelmien tunnistussanoista ja Sanasto-sivun listasta *Suunnitelman sanat* (`sana = menetelmä`, esim. `kuntotarkastu = aisti`, `olosuhdeseuran = seuranta`).
+
+Olosuhdeseurannalla voi olla useita kohtia (esim. paine-erot ja T/RH/CO₂). Kirjatut mittalaitteet jaetaan niille järjestyksessä.
+
+## Olosuhdeseuranta (`js/seuranta.js`)
+
+Olosuhdeseuranta on kohteen yhteinen mittaus, ei tilakohtainen havainto. Mittalaitteet kirjataan kohteen **Olosuhdeseuranta**-näkymässä (kohteen etusivu, tutkimussuunnitelman kohta tai pohjapiirroksen MIR-merkki). Laitteesta kirjataan vain:
+
+- **tunnus** MIR1–MIR99: laitteen oma numero syötetään käsin (ei juokseva). Sama numero ei voi olla kohteessa kahdesti.
+- **tila ja merkintä pohjakuvaan**: samalla sijaintivalinnalla kuin havainnoissa, ilman rakenneosaa.
+- **kuva sijoittelusta**: poishakijaa varten. Kuvat eivät mene raportille; ZIP-paketissa ne ovat kansiossa `varmuuskopio/seuranta/`.
+
+*Seuraava laite* -painike avaa heti uuden laitteen samaan kerrokseen. Näkymässä on kerroksittain pohjakuvat MIR-merkein ja laiteluettelo kuvineen, joten poishakija näkee, missä laitteet ovat. Lähtötarkistus näyttää laitteet, joilta puuttuu tunnus, tila, merkintä tai kuva.
+
+ZIP-paketissa `havainnot.json` (`olosuhdeseuranta`) ja `havainnot.md` sisältävät laiteluettelon (tunnus, kerros, tila, kohta pohjakuvassa), ja laitteet on merkitty pohjapiirroksiin. Mittausdata tulee raportille mittalaitteiden pilvipalvelusta. Tutkimussuunnitelman kohdassa *Olosuhdeseuranta* tehty-määrä on kirjattujen laitteiden määrä.
+
+## Asetukset (`js/asetukset.js`, sivu #/asetukset)
+
+Kaikki säädettävät toiminnot ovat yhdellä sivulla (etusivu → Asetukset ja työkalut → Asetukset). Näkyvissä ovat neljä perusasetusta (menetelmä sanelusta, tila sanelusta, mikrofonipainike, värinä); muut ovat taitettuna kohdassa *Lisäasetukset (testaus ja ylläpito)*, joka aukeaa itsestään, jos sieltä on muutettu jotain. Asetukset ovat laitekohtaisia (localStorage `ks.asetukset`); tallessa ovat vain oletuksesta poikkeavat arvot.
+
+- **Täytetään sanelusta:** menetelmä, opittu menetelmäennuste, tila, rakenneosa, tulos, mittausarvot ja kentät, kuntoarvion rakennusosa, tunnusten numerointi
+- **Pikavalinta:** milloin avautuu (jokaiselle / vain alussa / ei koskaan), tila pikavalinnassa, suunnitelman menetelmät ylimpänä, Seuraava jatkaa samalla menetelmällä
+- **Sanelu:** pidä pohjassa / napauta, puheentunnistus (ylläpitäjän asetus / palvelin / laite), värinä
+- **Kamera:** kuvan koko, JPEG-laatu, näyttö päällä
+- **Tarkistus ja pohjakuva:** tulos pakollinen, tunnistettujen tilojen lisäys
+
+*Kopioi asetukset* tuottaa JSON-tekstin muutetuista asetuksista; sen voi liittää toiseen puhelimeen (*Liitä asetukset*) tai tehdä siitä sovelluksen oletukset muuttamalla `SCHEMA`n `d`-arvot.
+
+Kun menetelmä valitaan itse, uuden havainnon alussa avautuu pikavalinta: suunnitelman tekemättömät ja edellinen menetelmä isoina painikkeina, muut alla. Itse tehdyt valinnat kerryttävät opetusaineistoa (Learn).
+
+## Lähtötietopaketti Claudelta (`js/paketti.js`, kansio `claude-projekti/`)
+
+Suositeltu tapa saada lähtötiedot sovellukseen. Tutkija antaa kohteen aineiston (tarjous, piirustukset, isännöitsijäntodistus …) Clauden Lähtötiedot-projektille, joka palauttaa paketin (`kuva-sanelu-lahtotiedot`, versio 1). Lähtötiedot-sivulla *Clauden lähtötietopaketti*: paketti valitaan tiedostona tai liitetään tekstinä (välilehdet).
+
+1. Sovellus tarkistaa muodon, tunnukset ja arvot ja näyttää yhden kootun tarkistuksen lähteineen (epävarmat ja jo kirjattua korvaavat jäävät valitsematta).
+2. Hyväksytyt tiedot: kohteen nimi ja osoite, suunnitelman kohdat, kerrokset ja tilat, kuntoarvion perustiedot, korjaushistoria ja rakenteet, kentällä huomioitavat asiat.
+3. Tutkija liittää alkuperäiset tiedostot: ne tallentuvat lähtötiedoiksi (ZIP: `lahtotiedot/`), ja paketissa pohjakuviksi merkityt asetetaan kerroksille, jolloin tilojen tunnistus antaa paketin tiloille sijainnit.
+
+**ZIP-paketti (suositus):** Claude palauttaa `lahtotiedot-<kohde>.zip`, jossa on `paketti.json` ja alkuperäiset tiedostot. Sovellus lukee molemmat kerralla: tiedostoja ei tarvitse valita erikseen, `pohjakuva`-kohdan tiedostot (oikea sivu) asetetaan kerroksille, ja Clauden antamat tilojen sijainnit (`sijainti: {x, y}`, 0–1 näytetyn sivun vasemmasta yläkulmasta) piirretään suoraan pohjakuvaan. Tekstikerroksesta luetut sijainnit ovat varmoja; kuvasta arvioidut (`varmuus: "arvio"`) näkyvät katkoviivalla vahvistamattomina. Jos kaikilla kerroksen tiloilla on sijainti, tekstintunnistusta ei ajeta; muuten tunnistus täydentää puuttuvat eikä siirrä Clauden merkitsemiä. Pelkkä .json toimii edelleen, jolloin tiedostot liitetään erikseen.
+
+**Jakaminen sovellukseen (Android):** Kun sovellus on asennettu kotinäytölle, se näkyy puhelimen Jaa-valikossa. Clauden ZIP-paketin, tarjous-PDF:n tai pohjakuvan voi jakaa suoraan esim. latauksista tai sähköpostista. Sovellus kysyy kohteen (uusi tai olemassa oleva) ja käsittelee tiedostot: paketti tarkistusikkunaan, PDF:t ja kuvat tutkijan valinnan mukaan tarjoukseksi, pohjakuvaksi tai asiakirjaksi (arvaus tiedostonimestä). Kohteen varmuuskopio-ZIPin voi palauttaa samalla tavalla. Toteutus: `share_target` manifestissa, `sw.js` ottaa POST-pyynnön vastaan ja tallentaa tiedostot välimuistiin `ks-jaettu`, `js/jaa.js` näyttää valinnan. Ei toimi iPhonessa eikä selainvälilehdellä. Jos sovellus oli asennettu ennen tätä versiota, jakokohde voi vaatia sovelluksen poistamisen ja uudelleenasennuksen.
+
+**Katselmus ja aiemmat tutkimukset:** Kun tarjousta ei vielä ole, Claude laatii paketissa katselmussuunnitelman (`katselmus`: kysymykset, kierros tiloineen, aineistopyynnöt, jokaisella peruste aineistosta). Se näkyy kohteen sivulla Seuraavaksi-korttina ja omana näkymänään (`js/katselmus.js`, `#/k/<id>/katselmus`): kysymyksiin kirjataan vastaukset, kohdat kuitataan, ja kierroksen tilasirusta avautuu kamera suoraan siihen tilaan. Aiempien raporttien tulokset (`aiemmat`) sidotaan tiloihin ja näkyvät havaintokortilla valitun tilan kohdalla sekä kohteen sivulla raporteittain. Molemmat kulkevat viennissä raportointiin. ZIPiin viedään vain pohjakuvat; muut asiakirjat jäävät Clauden käsittelemiksi.
+
+Projektin ohje ja paketin kuvaus ovat kansiossa `claude-projekti/` (OHJE.md, lahtotietopaketti-v1.md, esimerkki-paketti.json). Puhelimessa luku (`js/kalahto.js`) jää varavaihtoehdoksi ilman verkkoa.
+
+## Kuntoarvion lähtötiedot asiakirjoista (`js/kalahto.js`)
+
+Lähtötiedot-sivun *Asiakirjat ja piirustukset* (tai kuntoarvion sivun *Lisää asiakirjoja*) ottaa PDF- ja kuvatiedostoja (isännöitsijäntodistus, yhtiöjärjestys, kunnossapitotarveselvitys, energiatodistus, rakennusselostus, piirustukset). Teksti luetaan puhelimessa: PDF:n tekstikerros, ja jos sitä ei ole, tekstintunnistus (enintään 8 sivua). Mitään ei lähetetä verkkoon. Luku jatkuu taustalla, vaikka tutkija siirtyy muualle: kohteen sivulla näkyy tila, ja valmiit ehdotukset odottavat tarkistusta, kunnes tutkija palaa kohteelle (kameraa ei keskeytetä).
+
+Sovellus ehdottaa poimittuja tietoja, ja tutkija hyväksyy ne lähdeotteen kanssa:
+- perustiedot (rakennusvuosi, tyyppi, pinta-ala, huoneistot, perustukset, runko, julkisivu, vesikatto, lämmitys)
+- tehdyt kunnossapito- ja muutostyöt (vuosi + työ)
+- rakennusosien rakenteet (esim. bitumikermikate → Vesikatteet) ja uusimisvuodet
+
+Poiminta on sääntöpohjainen (`poimi`), eli se löytää selväsanaiset tiedot tekstiasiakirjoista. Piirustuksista luetaan materiaalimerkinnät otteiksi; rakennetyyppejä ei tulkita. Asiakirjat tallentuvat kohteelle ja viedään ZIP-pakettiin kansioon `lahtotiedot/`, jolloin raportointivaiheen työkalu voi lukea ne kokonaan.
+
+Märkätilakartoituksen Asunto-kenttä jää pois, kun kohteessa ei ole asuntoja (kortin painike *Ei asuntoja*, tai kuntoarvion perustiedoissa huoneistoja 1 / omakotitalo).
+
+## Yleiskuvat (`js/yleiskuvat.js`)
+
+Kameranäkymässä on kaksi välilehteä: **Havainto** ja **Yleiskuva**. Yleiskuva-tilassa jokainen laukaisu tallentuu heti kohteen yleiskuviin valitun tilan kanssa, ilman sanelua ja havaintoa. Kohteen sivulla *Yleiskuvat* näyttää kuvat tiloittain; kuvalle voi lisätä kuvatekstin tai vaihtaa tilan. ZIP-paketissa kuvat ovat kansiossa `yleiskuvat/` (YK01_OH1.jpg …), ja luettelo on `havainnot.md`:ssä ja `havainnot.json`:ssa. Yleiskuvat synkronoituvat pilveen kuten muutkin kohteen tiedot.
+
+## Versio 48
+
+- **Muistio:** alapalkissa kamerapainikkeen vieressä *Muistio*. Avautuu suoraan uuteen muistiinpanoon: kirjoita tai pidä *Sanele*. Tila täyttyy Seurannan ehdotuksesta (*Vaihda*), ja tallennus hyväksyy ehdotuksen. Tallennetut muistiinpanot uusin ensin, napautus avaa muokkauksen (teksti, tila, poisto). Keskeneräinen teksti säilyy laitteella. Synkronoituu pilvikohteissa riveittäin. Vienti: `havainnot.json` → `muistiinpanot`, `havainnot.md` → *Muistiinpanot*, LUE_MINUT kohta 18.
+- **Piirtäminen kuviin** (kuten kenttälomakkeessa): havaintokuvan katselussa *Piirrä* → kynä, ympyrä, nelikulmio, nuoli, kuusi väriä, kumoa. Merkinnät tallentuvat muokattavina (avaa uudelleen: *Muokkaa merkintöjä*), ja kortissa, pikkukuvissa ja paketissa näkyy merkitty kuva. Alkuperäinen säilyy ja menee pakettiin kansioon `kuvat/alkuperaiset/`.
+- **Pohjakuva PDF:nä merkinnöin** (kuten kenttälomakkeessa): havainnot ja olosuhdeseurannan mittalaitteet oikeina PDF-kommentteina (nuolitekstilaatikko + pallo), joita voi siirtää, muokata ja poistaa Acrobatissa. Pohjana alkuperäinen PDF-sivu vektorina (tallennetaan PDF-pohjakuvan lisäyksessä v48 alkaen; kierto ja rajaus huomioidaan), muuten pohjakuvan kuva. Pohjakuvanäkymässä *Lataa PDF merkinnöin*; paketissa `pohjapiirrokset/<kerros>_merkinnat.pdf` ja alkuperäinen PDF.
+- **LUE_MINUT kohta 1:** kuvista saa täydentää tutkijan kirjauksia (myös mittarilukemat), mutta ne esitetään ehdotuksina, jotka tutkija tarkistaa (Teemu 23.11.).
+- Uusi kirjasto `lib/pdf-lib.min.js` (pdf-lib 1.17.1), välimuistissa offline-käyttöä varten.
+
+## Versio 47
+
+- **Seuranta-rivi näkyy aina** kohteen Lisää-osiossa. Jos Seurantaa ei voi käyttää, rivi kertoo syyn (esim. lähtötiedoista puuttuvat tilojen alueet ja pohjakuvan mittakaava) ja mitä tehdä.
+- **Lähtötietojen tuonti varoittaa**, jos kerroksen pohjakuvalta puuttuvat tilojen alueet tai `leveys_m`.
+- **Lähtötieto-projekti:** alueet ja ovet tehdään nyt myös skannatuille pohjille. `tila_alueet.py`: `--skannattu` (tekstit poistetaan kuvasta, alueet arvioiksi) ja `--tunnettu-mitta X1,Y1,X2,Y2,METRIT` (mittakaava tunnetusta mitasta). OHJE: epävarmatkin oviaukot merkitään, pohjoista ei päätellä muista lähteistä.
+
+## Versio 46 (selkeys, Teemun päätökset 20.11.)
+
+- **Tilan valinta:** yksi ehdotus ja *Vaihda*. Kamerassa tila näkyy vain yläreunassa ("119 ehdotus · Vaihda"); ehdotusrivi poistettu. Pikavalinnassa "Tila: 119 ehdotus [Vaihda]". *Vaihda* avaa sijainnin valinnan: haku, pohjakuva ja seurannan piste, viimeksi käytetyt (4), kerros vain jos useita; koko tilalista "Näytä kaikki" -linkistä. Rakenneosa valitaan vain havaintokortissa.
+- **Kuva hyväksyy ehdotuksen:** jos tilaa ei vaihdeta, ensimmäinen kuva hyväksyy ehdotetun tilan ja seuranta kiinnittyy siihen. Sanelussa sanottu tila voi vielä korjata sen. Yleiskuvissa tila seuraa edelleen liikkumista.
+- **Tilan nimi:** "118 Tila 118" → "118" (paikkanimi jätetään pois). Kerrosta ei näytetä, kun kohteessa on yksi kerros.
+- **Kamera:** kuvan päällä ollut nuoli poistettu; *Poikkeama* ja *Ei huomautettavaa* poistettu (tulos sanelusta tai havaintokortista); jäljellä *Täydennä tiedot*. Havainto/Yleiskuva-valinnassa samat kuvakkeet kuin pikavalinnassa. Menetelmä koko nimellä.
+- **Kohteen etusivu:** alapalkin *Lopeta* → *Viimeistele* ja luvun tilalla piste; luku näkyy Viimeistele kohde -näkymässä ("täydennettävää"). Havaintojen pikkukuvista merkit pois, tilalla teksti "tietoja puuttuu". Rakenneavauksen näytteet omalla rivillään.
+- **Havaintokortti:** otsikossa menetelmän koko nimi; "Lisää kuva"; "Lisää tähän" → "Tee samassa kohdassa myös".
+- **Havaintolista:** "!" → "2 tietoa puuttuu"; kamerapainikkeessa teksti "Lisää kuvia".
+- **Kuntotarkastus:** osiot juoksevaan numerojärjestykseen: Sisätilat 5.12, Muut tilat 5.13, Märkätilat 5.14, järjestelmät 5.15.1–5.15.4 (myös `tools/build_data.py`).
+- **Termit:** *Seuranta* (ei tilaseuranta/askelpaikannus), *Ei huomautettavaa*, *Viimeistele kohde*.
+
+## Versio 45
+
+- **Tilaseuranta, pilottilokin (20.11.) analyysi:** askeleet tunnistuivat hyvin (0,6–0,8 m) ja puhelimen kompassi oli luotettava: pelkillä askelilla ja kompassilla edellisestä tilasta laskettu kävely osui 10/14 siirtymässä 1 m:n päähän oikeasta tilasta. Kompassia ei kuitenkaan käytetty, koska pohjakuvan pohjoista ei tiedetty (ei paketissa, ja vanha oppiminen vaati 20 varmaa askelta). Lokin uudelleenajo vahvisti: ilman pohjoista 20 % / 34 % (kenttä: 3/17 ja 7/17), pohjoisen kanssa noin 40 % / 55–60 %.
+  - *Pohjoinen opitaan tilavalinnoista:* kahden tilavalinnan välinen kävely tallennetaan kompassin mukaisena siirtymänä, ja pohjoinen sovitetaan niin, että siirtymät vievät edellisestä tilasta valittuun. Riittää yleensä 3–4 siirtymää. Ei riipu siitä, oliko seuranta oikeassa. PBM:n testikohteessa tulos 30° (lokista).
+  - *Ehdotukset pehmeästi:* tila-alueiden väliin jää seinän levyisiä rakoja ja tutkija seisoo usein oviaukossa, joten alle ~1 m:n päässä oleva tila lasketaan mukaan.
+  - Lokin uudelleenajo (`replay.js`) on nyt työkaluna: jokaisen uuden lokin voi ajaa algoritmin muutosten jälkeen.
+
+## Versio 44
+
+- **Pikavalinta:** napautus laatikon ulkopuolelle (kameranäkymään) = *Valitse myöhemmin*. Haussa laatikko nousee näytön yläreunaan ja muut osiot piiloutuvat, jotta näppäimistö ei peitä tuloksia.
+- **Tila valmiina seurannasta:** kun tilaa ei ole valittu, seurannan todennäköisin tila täyttyy ehdotukseksi (merkki *ehdotus*) sekä havainnossa että yleiskuvassa. Ehdotus päivittyy liikkuessa, kunnes tutkija valitsee tilan tai ottaa kuvan. Ehdotus ei kiinnitä seurantaa; vain tutkijan oma valinta kiinnittää (väärä ehdotus ei vahvistu).
+- **Seuranta pohjakuvalla:** sijainnin valinnassa näkyy reaaliajassa seurannan arvio (sininen piste) ja epävarmuus (pistepilvi) sekä todennäköisin tila ja askelmäärä. Päivittyy kerran sekunnissa.
+- **Vie seurannan loki** omana rivinään (ennen pieni linkki kytkimen alla). Valinnat: *Jaa tiedosto* (.txt, koska Android ei jaa .json-tiedostoja), *Tallenna laitteelle*, *Kopioi leikepöydälle*.
+- **Seurannan vianetsintä** kohteen Lisää-osiossa: tuleeko anturidataa, askelmäärä, suuntalähde, onko pohjassa ovia, pohjoisen lähde.
+- **Pohjoisen oppiminen varmemmaksi:** kävelyistä kerätyt suunnat otetaan käyttöön vasta, kun tutkijan seuraava tilavalinta vahvistaa seurannan olleen oikeassa tilassa.
+
+## Versio 43
+
+- **Tilaseurannan tarkennus** (pilotin palaute: ehdotukset lähes aina väärin):
+  - *Kompassi:* puhelimen eteenpäin-suunta ilmansuuntana (deviceorientationabsolute, iPhonessa webkitCompassHeading) korjaa kävelysuuntaa, kun puhelin on kädessä. Pohjakuvan pohjoinen tulee paketista (`pohjakuva.pohjoinen`) tai opitaan kävelyistä (`kerros.pohjoinenOpittu`). Magneettihäiriöt siedetään (sekamalli).
+  - *Tauot:* kun näyttö on ollut pimeänä tai sovellus taustalla, askeleita jäi laskematta: sijainti hajautetaan naapuritiloihin tauon pituuden mukaan.
+  - *Väärät askeleet:* askel hyväksytään vain kävelyjaksossa (toinen askel 1,4 s sisällä). Kyykistyminen tai laukun nosto ei siirrä sijaintia.
+  - *Tilojen ulkopuoliset alueet* (nimeämätön käytävä, porras, seinä) eivät kaada seurantaa.
+  - *Ehdotukset:* jos seuranta on epävarma, listaa täydennetään viimeksi valitulla tilalla ja sen naapuritiloilla. "Todennäköisin" vain, kun varmuus ≥ 60 %.
+  - *Sanelussa sanottu tila* kiinnittää seurannan kuten valinta. *Askelpituus* opitaan kiinnityksistä.
+  - *Loki:* askeleet, suunnat, kompassi, tauot ja tilavalinnat tallentuvat; kohteen Lisää → Vie seurannan loki. Lokilla seuranta voidaan ajaa uudelleen ja säätää.
+  - Lähtötieto-projekti: `tila_alueet.py` tarkistaa mittakaavan piirustuksen pinta-aloista; ohjeessa pohjoisnuolen luku.
+- **Kameran pikavalinta yksinkertaisemmaksi:** ensin *Havainto / Yleiskuva*, sitten "Missä olet?" (2–4 ehdotusta + Hae tila…) ja "Mitä kirjaat?" (suunnitelman menetelmät + aistinvarainen + Muu menetelmä…). Haku ja koko lista vasta pyynnöstä.
+- **Kamera:** "Täydennä tiedot" (ent. Avaa havainto), "Seuraava havainto", "Ei huomautettavaa"; vähimmäistietojen merkit poistettu kuvan päältä.
+- **Tutkimussuunnitelma:** *Lisää menetelmiä* avaa haun ja valintalistan (useita kerralla). Määrä − / + suoraan listassa, tarkennus napauttamalla nimeä. Korjaus: "Näytteitä avauksista" näkyi kaikilla menetelmillä (piilotus ei toiminut, `[hidden]`-tyyli).
+- **Havaintokortti:** valinnaiset kentät näkyvät heti pakollisten alla ("Muut tiedot · valinnaisia"). Osio 2 = *Menetelmä ja tiedot*, osio 3 = *Tulkinta ja suunnitelman kohta* (ent. Lisätiedot).
+
+## Versio 42
+
+- **Kohdenäkymä:** omat kohteet ensin, muiden kohteet taitettuna listan lopussa. Oma = tutkijan luoma tai kirjaama pilvikohde tai Tutkija-kentässä tämän laitteen tutkijan nimi. Yli kuuden kohteen listassa haku.
+- **Alimenetelmät** (`havainto.emo`): havaintokortin *Lisää tähän* -siruista toinen menetelmä samaan kohtaan (esim. rakenneavauksesta RH-mittaus tai näyte). Perii sijainnin, pohjakuvan kohdan, rakenneosan ja suunnitelman kohdan. Kortissa *Tässä tehty* ja *Osa havaintoa*; viennissä `osa_havaintoa` ja `alimenetelmat` (LUE_MINUT 16).
+- **Asuntokaupan kuntotarkastus** (`js/akk.js`, `#/k/<id>/akk`): Kuntotarkastus-välilehden osiot (5.1–5.14.4). Osio kuitataan ✓:lla, poikkeamat kuvalla ja sanelulla (osio tunnistetaan sanelusta), tarkastuslistan rivit vain poikkeuksina (! ? –), *Ei voitu tarkastaa* koko osiolle tai riville syineen → raportin kohta 1.8. Rakennetiedot ja vinkit lähtötiedoista, ei pakollisia kenttiä. Vienti `kuntotarkastus` (LUE_MINUT 17).
+- **Tilojen alueet ja tilaseuranta** (`js/paikannus.js`): lähtötietopaketin `tilat[].alue`, `kerrokset[].ovet` ja `pohjakuva.leveys_m` (Clauden skripti `claude-projekti/tila_alueet.py`). Pohjakuvasta tunnistetaan tila mistä tahansa kohdasta. Tilaseuranta kytketään kohteen *Lisää*-kohdasta; se ei näy kenttätyön aikana, vaan kamerassa ja sijaintivalinnassa näkyy 2–3 todennäköisintä tilaa. Valinta kiinnittää sijainnin. Taskutila pimentää näytön ja estää kosketukset. Osumatarkkuus (1. / 2–3 ehdotus) tallentuu laitteelle.
+- **Tiiveysmittauksen laskuri** (`js/tiiviys.js`, `#/k/<id>/tiiviys/<havainto>`): kerroksittain kiertävä mittaus (pituus + oikea/vasen), muoto ja sulkeutumisen tarkistus, osa-alueiden korkeuserot; lattiapinta-ala, ilmatilavuus ja vaipan ala havainnon kenttiin. Laskelma viedään raportille (`tiiveyslaskelma`).
+- **Korjauksia:** kuntoarvio ei enää ole "kesken" pelkistä lähtötietojen perustiedoista (perustiedot viedään silloin `rakennuksen_perustiedot`-kohtana); kuntotarkastus samoin vasta, kun se on suunnitelmassa tai osio on kuitattu.
+
+## Menetelmät ja kalusto (versio 41)
+
+Menetelmät, kentät, näytetyypit ja kalusto tulevat Menetelmät ja kalusto -taulukosta (Claude-artifakti, hyväksytty 19.11.2026). Taulukosta generoidaan `js/menetelmat-data.js` skriptillä `tools/build_data.py` (`python3 tools/build_data.py taulukko.xlsx js/menetelmat-data.js`) (taulukko ladataan xlsx:nä). Käsin ovat `js/methods.js`:ssä märkätilakartoitus, RH-taulukot, sanelun valintasanat ja näytetyyppien tunnusten etuliitteet.
+
+- **27 menetelmää**, joista uusia mm. ilmamäärä-, tiiveys-, melu-, viilto-, kalvopaksuus- ja PID-mittaus, radon (purkit / jatkuva), väestönsuoja, vetokoe ja merkkisavukoe. Laite- ja kalustokentät on poistettu; laitetiedot tulevat raporttipohjasta. Poikkeus: ilmamäärämittauksen mittalaite, koska se määrää kentät.
+- **Taso** (kohta / tila / kohde) ja **tyypilliset alimenetelmät** ovat menetelmän tiedoissa (`M.taso`, `M.alimenetelmat`). Alimenetelmien kirjaus tulee seuraavassa vaiheessa.
+- **Uudet kenttätyypit:** kellonaika (`time`), monivalinta (`multi`, arvo "M2; DG18") ja laskettu (`calc`). Vetolujuus lasketaan murtokuormasta ja halkaisijasta, näytteenottoaika aloitus- ja lopetusajasta (ellei tutkija kirjoita sitä itse).
+- **Oletusarvot:** esim. vetokokeen halkaisija 48 mm ja väestönsuojan koepaine 300 Pa täyttyvät valmiiksi, jos muistettua arvoa ei ole.
+- **Väestönsuoja** on tarkistuslista kuten märkätilakartoitus: rivit ovat siruja (Kunnossa / Korjaustarve / Puuttuu / Ei koske), ja *Muut kohdat kunnossa* kuittaa loput.
+- **Päivitys:** muuttuneet oletusmenetelmät korvautuvat versionumeron perusteella (tutkijan sanelusanat säilyvät), ja uudet menetelmät lisätään kerran, kun `OLETUSVERSIO` kasvaa. Vanhojen havaintojen näytetyypit muunnetaan uusiin nimiin kohdetta avattaessa.
+- **Sanasto:** menetelmän tunnistussanat ovat taulukosta. Aistinvarainen tarkastelu valitaan vain, jos muuta menetelmää ei tunnisteta. Enintään kolmen merkin sanat (pid, vss, akk) tunnistetaan vain kokonaisina.
+
+## Näytteenotto (menetelmä `nayte`)
+
+32 näytetyyppiä Labrocin näytteenotto-ohjeiden (AO-ohjeet) mukaan, ryhmittäin: asbesti ja haitta-aineet, pöly ja kuidut, mikrobit, kemialliset ja betoni. Tyyppi antaa tunnukselle etuliitteen (VOCI1, AS1, MIK1 …) ja näyttää vain tyypin kentät omassa järjestyksessään: esim. VOC-ilmanäytteelle näyteputken ja kenttänollaputken numerot, pumppu, aloitus- ja lopetusaika, laskettu näytteenottoaika ja ilmamäärä. Putken, pumpun ja keräimen numerot tunnistetaan sanelusta numeroineen ("näyteputki 123456, pumppu VC2").
+
+Pumppu muistetaan kaikille näytteille, muut muistettavat kentät (esim. kenttänollaputki) näytetyypeittäin. Tyypin alla näkyy *Muista*-vinkki ohjeesta (esim. kenttänolla ja näytteenottoa edeltävät olosuhteet); vinkki ei ole täytettävä kenttä. Tulos on valinnainen, koska se tulee laboratoriosta.
+
+## Kalusto mukaan (`js/kalusto.js`, `#/k/<id>/kalusto`)
+
+Pakkauslista ennen kenttäkäyntiä: yleiskalusto, suunnitelman menetelmien kalusto ja näytetyyppien kalusto. Näytetyypit päätellään suunnitelman kohtien kuvauksista ("VOC-ilmanäyte") ja otetuista näytteistä; listaan voi lisätä näytetyypin tai menetelmän. Sama varuste näkyy vain kerran. Rastit tallentuvat vain tähän puhelimeen (`kohde.kalusto`, ei pilveen). Rivi näkyy kohteen sivulla ennen ensimmäistä havaintoa ja sen jälkeen *Lisää*-kohdassa.
+
+## Pilvi ja useampi tutkija (`js/cloud.js`, `js/sync.js`, `js/cloudui.js`)
+
+Käyttöönotto: **KAYTTOONOTTO-PILVI.md**. Tietokanta: `supabase/schema.sql`, käyttöoikeustestit: `supabase/rls-testit.sql`.
+
+- **Laite ensin:** kirjaukset tallentuvat aina ensin puhelimeen. Synkronointi lähettää muutokset ja hakee tiimin muutokset, kun yhteys on: käynnistyessä, 30 s välein, verkon palatessa ja muutoksen jälkeen. Kohteen yläreunassa näkyy tila, esim. *Pilvessä ajan tasalla* tai *Ei verkkoa: 5 muutosta odottaa*.
+- **Kirjautuminen:** Microsoft 365 -tunnuksilla (Supabase Auth, Entra ID). Vain sallitut sähköpostidomainit hyväksytään, ja tarkistus tehdään sekä sovelluksessa että tietokannassa.
+- **Oikeudet:** kohteen näkee vain sen tiimi. Sääntö tarkistetaan tietokannassa (RLS), ja kuvat ovat yksityisessä säiliössä polussa `kohde/tiedosto`. Muokkaaja ja aika asetetaan palvelimella. Rivejä ei poisteta pysyvästi, vaan poisto on merkintä, ja jokaisesta muutoksesta jää lokirivi.
+- **Rivit:** kohde puretaan riveiksi (kohde, kerros, tila, suunnitelman kohta, mittalaite, kuntoarvio, kuntoarvion osa, havainto, tiedosto), joten kaksi tutkijaa voi kirjata samaan aikaan. Jos samaa riviä on muutettu kahdessa paikassa, pilvessä ollut versio jää voimaan. Havainnon korvautunut versio jää talteen havaintokortille, josta sen voi palauttaa.
+- **Numerointi:** kentällä tutkijakohtaiset sarjat (TM-05), raportilla (ZIP) juoksevasti H01, H02 …
+- **Puhelimen tiedot:** uloskirjautuminen poistaa pilvikohteet puhelimesta (lähettämättömät säilyvät). Vanhat, synkronoidut kohteet poistetaan automaattisesti.
+
+## Tietoturva
+
+- **Ei ulkoista koodia:** kirjastot ovat repossa (`lib/`, versiot ja tarkisteet `lib/VERSIONS.txt`), eivät CDN:stä.
+- **Content-Security-Policy (index.html):** koodia ladataan vain sovelluksen omasta osoitteesta, ja tietoja voi lähettää vain sovellukseen ja organisaation Supabase-projektiin.
+- **Puheentunnistus:** `config.js` → `puheentunnistus: "laite"` = tunnistus vain puhelimessa. Jos se ei ole käytettävissä, sanelu tallennetaan äänitteenä, eikä ääni lähde puhelimesta.
+- **Kuvat:** kuvat piirretään aina uudelleen, joten sijainti- ja laitetiedot (EXIF/GPS) eivät päädy tallenteisiin.
+
+## Tallennus ja tietosuoja
+
+- Ilman pilviasetuksia tiedot tallentuvat vain laitteen selaimeen (IndexedDB). Selaimen tietojen tyhjennys poistaa kohteet, joten **vie ZIP-paketti jokaisesta kohteesta**. Samalla paketilla kohteen voi palauttaa (etusivu → Palauta varmuuskopio).
+- Pilviasetuksilla tiedot tallentuvat ensin laitteelle ja siirtyvät organisaation Supabase-projektiin (EU), ks. *Pilvi ja useampi tutkija*.
+- Puheentunnistus: ks. *Tietoturva*. Palvelinpohjainen tunnistus (`puheentunnistus: "palvelin"`) lähettää äänen selaimen palveluun (Chrome: Google).
+
+## ZIP-paketin sisältö
+
+```
+LUE_MINUT.txt            ohje aineiston käyttöön, myös AI-työkalulle
+havainnot.md             havainnot luettavassa muodossa
+havainnot.json           samat tiedot jäsenneltynä
+kuvat/H01_1.jpg …
+aanitteet/H01_1.webm …   jos puheentunnistus ei ollut käytössä
+pohjapiirrokset/<kerros>.png               merkinnöin
+pohjapiirrokset/<kerros>_alkuperainen.*    ilman merkintöjä
+varmuuskopio/data.json   palautusta varten
+```
+
+Mittausarvot ovat paketissa erillään havainnosta, ja jokaisessa havainnossa kerrotaan, onko tutkija vahvistanut arvot. `LUE_MINUT.txt` ohjeistaa käyttämään vain vahvistettuja arvoja ja kirjaamaan tutkimatta jääneet tilat ja pois jätetyt kohdat rajauksina.
+
+## Käyttöönotto GitHub Pagesissa
+
+1. Luo uusi repositorio ja vie tämän kansion tiedostot sen juureen.
+2. Settings → Pages → Source: *Deploy from a branch*, haara `main`, kansio `/ (root)`.
+3. Avaa osoite puhelimella ja lisää sovellus kotinäytölle.
+
+Kamera ja mikrofoni vaativat HTTPS-yhteyden (GitHub Pages käyttää sitä). Paikallisesti testattaessa `http://localhost` toimii:
+
+```
+python3 -m http.server 8000
+```
+
+**Päivitykset:** nosta aina kahta numeroa yhdessä, kun julkaiset muutoksia: `sw.js`:n `CACHE` (esim. `kuva-sanelu-v8`) ja `js/ui.js`:n `APP_VERSION` (esim. `"8"`). Versio näkyy etusivun alareunassa ja kameraluvun tiedoissa. Sovellus tarkistaa päivityksen, kun se avataan tai palaa näkyviin, ja ottaa uuden version käyttöön automaattisesti etusivulla tai kohdenäkymässä. Kesken olevaa kuvausta tai kirjausta ei keskeytetä.
+
+## Selaintuki
+
+| | Kamera | Puheentunnistus |
+|---|---|---|
+| Chrome, Android | kyllä | kyllä, vaatii verkkoyhteyden |
+| Safari, iOS | kyllä | selainikkunassa yleensä kyllä. Kotinäytöltä avattuna puheentunnistus voi puuttua: silloin sanelu tallennetaan äänitteenä, ja tekstin voi sanella näppäimistön mikrofonilla. |
+| Edge, Windows | kyllä | kyllä |
+
+Jos selaimen kamera ei käynnisty, laukaisin avaa puhelimen oman kamerasovelluksen.
+
+## Rakenne
+
+```
+index.html             sovelluksen runko
+css/app.css            PBM-väriteema
+js/config.js           ympäristön asetukset (Supabase, domainit, puheentunnistus)
+js/cloud.js            kirjautuminen (Microsoft 365) ja pilviyhteys
+js/sync.js             synkronointi (laite ensin)
+js/cloudui.js          kirjautumisnäkymä, tili, tiimi, synkronoinnin tila
+lib/                   kirjastot (ei CDN:stä)
+supabase/              tietokanta ja käyttöoikeustestit
+js/ui.js               kuvakkeet, ikkunat, ilmoitukset
+js/db.js               IndexedDB-tallennus
+js/menetelmat-data.js  menetelmät, näytetyypit ja kalusto taulukosta (generoitu)
+js/methods.js          oletusmenetelmät, rakenneosat, menetelmien tallennus
+js/kalusto.js          Kalusto mukaan -lista
+js/akk.js              asuntokaupan kuntotarkastus
+js/paikannus.js        tilaseuranta (askelpaikannus)
+js/tiiviys.js          tiiveysmittauksen laskuri
+js/editor.js           menetelmien muokkaus
+js/vocab.js            muokattavat sanalistat (oletukset + tutkijan muutokset)
+js/vocabview.js        Sanasto-sivu ja sanelun kokeilu
+js/methodpicker.js     menetelmän valinta: ehdotukset, haku ja uusi menetelmä
+js/autofill.js         tietojen tunnistus sanelusta ja automaattinen täyttö
+js/learn.js            oppiva menetelmän tunnistus (naiivi Bayes, laitteella)
+js/fieldfill.js        sanelusta menetelmän kenttiin (laite, lukemat, taulukon rivit)
+js/meter.js            mittarin näytön kameraluku ja lukemien tarkistus
+js/lukulaite-ocr.js    tunnistusydin (kopio PBM Kenttälomakkeista)
+js/dictation.js        sanelu (puheentunnistus tai äänite)
+js/camera.js           kamera ja kuvien pienennys
+js/app.js              tila, reititys, kohteet (työlista), alapalkki, tutkimussuunnitelma
+js/capture.js          Kuva + sanelu
+js/card.js             havaintokortti
+js/plan.js             pohjakuva, kerrokset, tilat, sijainnin valinta
+js/planrooms.js        tilojen nimien tunnistus pohjakuvasta (PDF-teksti tai OCR)
+js/zoom.js             pohjapiirroksen zoomaus, siirto ja koko näyttö
+js/obslist.js          havaintojen haku ja valinta
+js/gallery.js          galleriakuvien liittäminen ottoajan perusteella
+js/check.js            Lopeta kohde -tarkistus
+js/seuranta.js         olosuhdeseurannan mittalaitteet
+js/planimport.js       tutkimussuunnitelma tarjouksen/suunnitelman PDF:stä
+js/lahtotiedot.js      Lähtötiedot-sivu: kaikki tuontitavat, pohjakuvat kerroksittain, syötä itse
+js/katselmus.js        katselmussuunnitelma ja aiemmat tutkimukset tiloittain
+js/jaa.js              jakokohde: Androidin Jaa-valikosta tulevat tiedostot (manifest share_target, sw.js)
+js/paketti.js          Clauden lähtötietopaketin tarkistus ja käyttöönotto
+js/kalahto.js          asiakirjojen luku puhelimessa (taustalla) ja yhteinen tarkistusikkuna
+js/asetukset.js        asetukset (perus + lisäasetukset)
+js/yleiskuvat.js       yleiskuvat
+js/kuntoarvio.js       kuntoarvio: rakennusosat, kuntoluokat, käyttöiät, PTS-ehdokkaat
+js/kuntoarvio-data.js  rakennusosat, tarkistuslistat ja käyttöikätaulukko
+js/export.js           ZIP-vienti ja palautus
+sw.js                  toiminta ilman verkkoa
+```
+
+Ulkoiset kirjastot ladataan CDN:stä ja tallennetaan välimuistiin: JSZip 3.10.1 (vienti), pdf.js 3.11.174 (PDF-pohjakuvat) ja Tesseract.js 5.1.1 (kameraluku ja skannattujen pohjakuvien tilannimet). Muita riippuvuuksia tai käännösvaihetta ei ole.
+
+### Menetelmien muokkaus
+
+Menetelmiä muokataan sovelluksessa: **etusivu → Menetelmät**. Jokaiselle menetelmälle voi lisätä kenttiä (teksti lyhyt/pitkä, numero, päivämäärä, valintalista) ja valita kentälle:
+
+- **Pakollinen** – lähtötarkistus näyttää tyhjän kentän puutteena.
+- **Mittaustulos** (vain numero) – tutkija vahvistaa arvon, ja ZIP-paketissa se on erillään muista tiedoista.
+- **Muista edellinen arvo** – esim. mittalaite täyttyy valmiiksi seuraavaan saman menetelmän havaintoon.
+- **Yksikkö** – sanelusta tai tekstistä tunnistetut luvut ehdotetaan kenttiin yksikön perusteella.
+
+Menetelmät tallentuvat laitteelle. Ne jaetaan kollegoille **Vie menetelmät** / **Tuo menetelmät** -toiminnoilla (JSON-tiedosto). Kohteen ZIP-paketti sisältää kohteessa käytetyt menetelmät, ja ne lisätään palautettaessa. Havainnoissa käytettyä menetelmää ei voi poistaa, mutta sen voi piilottaa valinnoista.
+
+Oletusmenetelmät ovat tiedostossa `js/methods.js` (`OLETUKSET`). Niitä muutetaan koodissa vain, jos halutaan muuttaa uusien asennusten lähtötilannetta.
+
+### Sanasto
+
+Sanelun ja pohjakuvien tulkinnan sanalistat muokataan sovelluksessa: **etusivu → Sanasto** (myös Menetelmät-sivulta). Listat:
+
+| Ryhmä | Lista | Muoto |
+|---|---|---|
+| Sanelu: tulos | Poikkeamaa kuvaavat sanat, Aina poikkeama (myös kieltomuodossa), Kunnossa olevaa kuvaavat | sana riville |
+| Sanelu: sijainti | Rakenneosat, Tilojen nimet | `sana = arvo` |
+| Sanelu: menetelmän kentät | Mittalaitteet, Materiaalit | sana riville |
+| | Merkkiaineet | `sana = arvo` |
+| Pohjakuvat | Tilojen lyhenteet | `LYHENNE = Tilan nimi` |
+| | Tilojen nimet pohjakuvissa | nimi riville |
+
+Säännöt: sana on sanan alku (`kondens` osuu sanoihin kondenssi ja kondensoitunut). Enintään kahden kirjaimen sana (`us`, `ap`, `yp`) ja lainausmerkeissä oleva sana tunnistetaan vain kokonaisena. `#` aloittaa kommentin. Mittalaite kirjataan sanaston kirjoitusasussa (`GANN Hydromette BL-E`).
+
+Sivun **Kokeile sanelua** -kenttä näyttää heti, mitä lauseesta päätellään (menetelmä, tulos, tila, rakenneosa ja kentät), joten sanaston muutoksen vaikutuksen näkee kirjoittamalla esimerkkilauseen.
+
+Menetelmäkohtaiset sanat ovat menetelmän sivulla: **Tunnistussanat** (milloin sanelu kuuluu tälle menetelmälle), **Tunnuksen etuliite** (esim. MIK → MIK1, MIK2) ja kentän muokkauksessa kentän **tunnistussanat** (minkä sanan jälkeen tuleva arvo kirjataan kenttään).
+
+Muokattu lista tallentuu laitteelle ja korvaa oletuksen. **Palauta oletus** palauttaa listan. Sanasto kulkee **Vie menetelmät** -tiedostossa, ja tuonnissa kysytään, otetaanko se käyttöön, joten tiimi voi käyttää yhteistä sanastoa. Oletussanastoon on koottu tyypillisiä raporttien sanamuotoja (esim. pko-arvo, yksikköä, RA1, MIK1, MAK1, merkkiainevuoto, alunoita, toimenpiderajan ylitys, US/AP/YP).
+
+## Tunnetut rajoitukset
+
+- Ei synkronointia laitteiden välillä. Siirto tehdään ZIP-paketilla.
+- Pohjakuvasta käytetään yhtä PDF-sivua kerrosta kohden.
+- Tiloja ei piirretä alueina: tila merkitään pohjapiirrokseen tunnuksella, ja sen väri kertoo tutkimustilanteen.
+- Tilojen tunnistus vaatii, että nimet ovat painettua tekstiä samassa suunnassa kuin piirustuksen muu teksti. Viivaan tai symboliin kiinni oleva nimi (esim. ovenkaaren vieressä) jää usein löytymättä. Käsin kirjoitettuja nimiä ei tunnisteta. Valokuvasta tunnistus onnistuu sitä paremmin, mitä tarkempi kuva on: kuvaa piirustus suoraan yläpuolelta, ja anna sovellukselle alkuperäinen kuva (ei pienennettyä kuvakaappausta). Tulos tarkistetaan aina ennen lisäämistä.
+- Galleriakuvan ottoaika luetaan EXIF-tiedoista. Jos puhelin poistaa ne jaettaessa, käytetään tiedoston aikaleimaa, eikä ehdotus ole silloin luotettava.
+- Jokainen mittauspiste on oma havaintonsa. Saman pisteen kaikki syvyydet ja rinnakkaiset lukemat ovat havainnon taulukossa.
+- Kameraluku tunnistaa Vaisala HM40 -sarjan näytön. Muut mittarit kirjataan käsin, kunnes niille lisätään tunnistus.
+- Sanelusta tunnistetut luvut ovat ehdotuksia. Tutkija valitsee ne ja vahvistaa arvot itse.
