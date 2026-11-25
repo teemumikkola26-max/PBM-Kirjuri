@@ -45,6 +45,8 @@ Puhelimella testaus vaatii HTTPS:n (kamera, sanelu, anturit). Julkaisu esim. Git
 - Avaa julkaistu osoite (esim. `https://<käyttäjä>.github.io/kirjuri/index.html`) **Chromessa Androidilla** → valikko ⋮ → *Asenna sovellus*. Avaa sivu kerran ja odota pari sekuntia ennen asennusta (service worker käynnistyy).
 - Ei toimi: ZIP:stä tai tiedostosta avattuna (`file://`), GitHubin koodinäkymästä (github.com/…/index.html) eikä yksityisestä GitHub Pages -sivusta ilmaisella tilillä. Asennuksessa Google hakee kuvakkeet ja manifestin, joten osoitteen on oltava julkinen (sovellus itsessään ei sisällä asiakastietoja; ne ovat puhelimessa ja SharePointissa).
 - Jos samaan osoitteeseen on aiemmin asennettu toinen sovellus (esim. Kuva + sanelu), poista vanha ensin.
+- Jos asennus sanoo *Lataaminen epäonnistui*: Chrome-valikko ⋮ → *Lisää aloitusnäyttöön* → *Luo pikakuvake* toimii ilman asennuspakettia (ei kuitenkaan näy jakovalikossa). Jakokohteen asetukset on pidetty samoina kuin Kuva + sanelussa, joka asentuu (K3.1).
+- Samsung-puhelimessa avaa osoite **Chromessa**, ei Samsung Internetissä (Samsung Internetin asennus voi päättyä ilmoitukseen *Lataaminen epäonnistui*).
 - iPhone: Safari → Jaa → *Lisää Koti-valikkoon*. iPhonessa jakaminen muista sovelluksista Kirjuriin ei ole mahdollista (Applen rajoitus).
 - Jakaminen Kirjuriin (Android): kuva → *Jaa* → Kirjuri → valitse kohde → *Uusi kirjaus*, *Yleiskuviksi* tai *Lähtötiedoiksi*. Toimii asennetussa sovelluksessa, kun se on avattu ainakin kerran.
 

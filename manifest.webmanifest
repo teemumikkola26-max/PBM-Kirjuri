@@ -41,15 +41,10 @@
             "application/zip",
             "application/pdf",
             "image/jpeg",
-            "image/png",
-            "application/json",
-            "text/plain",
-            ".json"
+            "image/png"
           ]
         }
-      ],
-      "title": "otsikko",
-      "text": "teksti"
+      ]
     }
   }
 }

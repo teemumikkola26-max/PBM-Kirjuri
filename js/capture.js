@@ -90,6 +90,7 @@
       '<textarea data-text rows="2" aria-label="Havainto" placeholder="Kirjoita havainto tai pidä mikrofonia pohjassa"></textarea>' +
       '<button class="cp-need hidden" data-c="need" data-need></button>' +
       '<p class="cp-muista hidden" data-muista></p>' +
+      '<div class="cp-opas hidden" data-opas></div>' +
       '<div class="cp-meta">' +
       '<button class="card-link" data-c="card"><span data-cl>Täydennä tiedot</span>' + icon("back", "flip") + "</button></div>" +
       "</div>" +
@@ -192,7 +193,19 @@
     const autoSoon = UI.debounce(runAuto, 900);
     let autoP = Promise.resolve();
     let alive = true;   // näkymä auki; myöhässä tuleva sanelu tallentuu silti havaintoon
+    /* Opas uudelle käyttäjälle (ensimmäiset kirjaukset): mitä tehdä seuraavaksi, ilman valintoja */
+    function paintOpas() {
+      const el = $("[data-opas]"); if (!el) return;
+      let n = 0; try { n = +localStorage.getItem("ks.kirjauksia") || 0; } catch (e) { /* ohita */ }
+      const nayta = mode === "hav" && n < 5 && !(h.sanelu || "").trim() && !(() => { try { return dict.active; } catch (e) { return false; } })();
+      el.classList.toggle("hidden", !nayta);
+      if (!nayta) return;
+      el.innerHTML = !h.kuvat.length
+        ? '<b>1. Ota kuva</b> laukaisimesta. Menetelmää tai tilaa ei tarvitse valita ensin.'
+        : '<b>2. Pidä mikrofonia pohjassa</b> ja kerro, mitä teet ja näet, esim. ”Rakenneavaus ulkoseinän alaosaan, eriste kostea”. <b>3.</b> Tallenna ja seuraava.';
+    }
     function paintStatus() {
+      paintOpas();
       if (mode === "yk") { paintReq(); return; }
       // Havainnon numero ja kuvamäärä vasta, kun havainnossa on jotain (ei "Uusi havainto" -valikkoa tyhjänä)
       const n = h.nro ? nro(h) : "";
@@ -303,6 +316,7 @@
       },
       onPreview: (t) => { $("[data-prev]").textContent = t || "Puhu nyt…"; },
       onState: (st, msg) => {
+        paintOpas();
         const on = st === "listening" || st === "recording";
         live.classList.toggle("hidden", !on);
         $("[data-lst]").textContent = st === "recording" ? "Äänitetään" : dict.locked ? "Sanelu (napauta mikrofonia lopettaaksesi)" : "Sanelu: vapauta kun valmis";
@@ -416,6 +430,7 @@
       if (saved) {
         await rememberContext();
         if (window.Taidot) Taidot.havaitse(h);
+        try { localStorage.setItem("ks.kirjauksia", String((+localStorage.getItem("ks.kirjauksia") || 0) + 1)); } catch (e) { /* ohita */ }
         await Learn.learn(h);          // havainto valmis: malli oppii sanelun ja menetelmän yhteyden
         await Model.saveHavainto(h);
       }
@@ -547,7 +562,7 @@
        Molemmissa on hakukenttä: kirjoitus rajaa listaa, ja jos osumaa ei ole, sama kenttä lisää uuden. */
     function pikavalinta(alku, pakota) {
       const pvT = Asetukset.get("pv.tila");
-      const kysyM = !Auto.paalla("menetelma") || !!pakota, kysyT = !Auto.paalla("tila") && pvT !== "ei" && (pvT === "aina" || !h.sijainti.tilaId || (h.auto && h.auto.tila === "seuranta"));
+      const kysyM = !Auto.paalla("menetelma") || !!pakota, kysyT = !pakota && !Auto.paalla("tila") && pvT !== "ei" && (pvT === "aina" || !h.sijainti.tilaId || (h.auto && h.auto.tila === "seuranta"));
       if (!kysyM && !kysyT) return;
       const vanha = root.querySelector(".qp"); if (vanha) vanha.remove();
       const g = document.createElement("div");
@@ -557,12 +572,11 @@
          (suunnitelman kohdat). Haku ja kaikki vaihtoehdot avautuvat vasta "Hae…"-painikkeesta. */
       let tHaku = false, mHaku = false;
       g.innerHTML = '<div class="qp-box">' +
-        (alku && !pakota ? '<div class="qp-tyyppi"><button class="on" data-qhav>' + icon("cam") + '<span>Havainto<small>kuva ja sanelu</small></span></button>' +
-          '<button data-qyk>' + icon("image") + '<span>Yleiskuva<small>pelkkä kuva, ei sanelua</small></span></button></div>' : "") +
+
         (kysyT ? '<div data-sec="t"><div class="qp-h">Tila</div><div class="qp-trow" data-qtl></div></div>' : "") +
-        (kysyM ? '<div data-sec="m"><div class="qp-h">' + (pakota ? "Vaihda menetelmä" : "Mitä kirjaat?") + '</div><div class="qp-find" data-qmf hidden><input type="search" data-qms placeholder="Menetelmän nimi, esim. RH tai näyte" autocomplete="off" enterkeyhint="done"></div>' +
+        (kysyM ? '<div data-sec="m"><div class="qp-h">' + (pakota && h.menetelma ? "Vaihda menetelmä" : "Mitä kirjaat?") + '</div><p class="qp-vihje">Valinta ei ole pakollinen: menetelmän voi myös sanoa sanelun alussa.</p><div class="qp-find" data-qmf hidden><input type="search" data-qms placeholder="Menetelmän nimi, esim. RH tai näyte" autocomplete="off" enterkeyhint="done"></div>' +
           '<div data-qml></div></div>' : '<button class="btn btn-primary" data-qok style="width:100%;margin-top:12px">Valmis</button>') +
-        '<button class="qp-skip" data-qskip>' + (kysyM ? "Valitse myöhemmin" : "Ohita") + "</button></div>";
+        '<button class="qp-skip" data-qskip>Sulje</button></div>';
       const tIn = g.querySelector("[data-qts]"), mIn = g.querySelector("[data-qms]");
 
       /* Tila yhtenä rivinä: seurannan ehdotus (tai valittu tila) ja Vaihda. Vaihda avaa sijainnin valinnan
@@ -587,11 +601,14 @@
         } else {
           // Suunnitelman kohdat ja edellinen menetelmä; aistinvarainen aina mukana. Muut haun takana.
           let sugg = Asetukset.get("pv.suunnitelma") ? MethodPicker.ehdotukset(h.menetelma, h.id).slice(0, 5) : [];
-          if (!sugg.some((x) => x.id === "aisti") && all.some((m) => m.id === "aisti")) sugg = sugg.concat([{ id: "aisti", nimi: M.menetelma("aisti").nimi }]);
+          // Yleisimmät menetelmät aina näkyvissä (uusi käyttäjä löytää esim. rakenneavauksen ilman hakua)
+          ["aisti", "avaus", "rh", "pintakosteus", "nayte", "merkkiaine"].forEach((id) => {
+            if (sugg.length < 8 && !sugg.some((x) => x.id === id) && all.some((m) => m.id === id)) sugg.push({ id, nimi: M.menetelma(id).nimi });
+          });
           html = '<div class="qp-grid">' +
             sugg.map((x, i) => '<button class="qp-m' + (i === 0 && x.id === h.menetelma ? " qp-first" : "") + '" data-qm="' + esc(x.id) + '">' + esc(x.nimi) +
               (x.id === h.menetelma && !alku ? "<small>sama kuin edellä</small>" : x.tag ? "<small>" + esc(x.tag) + "</small>" : "") + "</button>").join("") +
-            '<button class="qp-m qp-more" data-qmhaku>' + icon("list") + " Muu menetelmä…</button></div>";
+            '<button class="qp-m qp-more" data-qmhaku>' + icon("list") + " Kaikki menetelmät / haku</button></div>";
         }
         g.querySelector("[data-qml]").innerHTML = html;
       }
@@ -684,9 +701,9 @@
       const g = document.createElement("div");
       g.className = "cam-guide";
       g.innerHTML = '<div class="cg-box"><h3>Näin kirjaat havainnon</h3><ol>' +
-        "<li><b>Valitse menetelmä ja tila</b> pikavalinnasta. Tilan voi vaihtaa yläreunasta ja menetelmän kuvan päältä.</li>" +
-        "<li><b>Ota kuva</b> laukaisimesta. Kuvia voi ottaa useita.</li>" +
-        "<li><b>Pidä mikrofonia pohjassa</b> ja kerro havainto. Vapauta, kun olet valmis.</li>" +
+        "<li><b>Ota kuva</b> laukaisimesta. Kuvia voi ottaa useita. Menetelmää ja tilaa ei tarvitse valita ensin.</li>" +
+        "<li><b>Pidä mikrofonia pohjassa</b> ja kerro, mitä teet ja näet: ”Rakenneavaus ulkoseinän alaosaan 101, eriste kostea”. Menetelmä ja tila tunnistetaan puheesta. Tauot eivät katkaise sanelua, ja seuraava sanelu jatkaa kesken jäänyttä lausetta. ”Piste” päättää lauseen.</li>" +
+        "<li><b>Menetelmän ja tilan voi valita myös itse</b> kuvan päältä ja yläreunasta.</li>" +
         "<li><b>Tallenna ja seuraava</b> aloittaa uuden kirjauksen samassa tilassa. Sanelun lopussa voit sanoa ”seuraava”.</li>" +
         "<li><b>Puheohjaus:</b> menetelmä sanelun alussa (”PKO …”, ”RH-mittaus …”) valitsee menetelmän. ”Kumoa” poistaa viimeisen kuvan.</li>" +
         "<li><b>Täydennä tiedot</b> avaa havainnon kaikki tiedot ja mittauskentät. Sen voi avata myös ilman kuvaa.</li>" +

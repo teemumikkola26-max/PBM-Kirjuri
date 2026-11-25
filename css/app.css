@@ -952,3 +952,8 @@ textarea{overflow:hidden;resize:none}
 table.mittarit{width:100%;border-collapse:collapse;font-size:13.5px}
 table.mittarit th,table.mittarit td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
 .taito-lomake .field textarea{min-height:56px}
+
+/* ---------- Kirjuri K3.2: kameran opas ja selkeämpi menetelmävalinta ---------- */
+.cp-opas{margin:8px 0 0;padding:10px 12px;border-radius:12px;background:rgba(255,211,138,.14);border:1px solid rgba(255,211,138,.45);color:#f3efe6;font-size:14.5px;line-height:1.4}
+.cp-opas b{color:#ffd38a}
+.qp-vihje{margin:-2px 0 10px;font-size:13px;color:#c9c4ba}

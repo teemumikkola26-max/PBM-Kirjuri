@@ -62,15 +62,36 @@
     return out;
   }
 
-  /* Muotoilu kenttään: iso alkukirjain ja piste, liitetään edellisen tekstin perään */
+  /* Sanellut välimerkit: "pilkku", "kysymysmerkki", "uusi rivi" missä tahansa; "piste" vain sanelun
+     lopussa tai ennen isoa alkukirjainta (mittauspiste, "piste valmis" -komento eivät muutu). */
+  function valimerkit(t) {
+    return String(t || "")
+      .replace(/\s+pilkku\b/gi, ",")
+      .replace(/\s+kysymysmerkki\b/gi, "?")
+      .replace(/\s*\buusi (rivi|kappale)\b\s*/gi, "\n")
+      .replace(/\s+piste(?=\s+[A-ZÅÄÖ])/g, ".")
+      .replace(/\s+piste\s*$/i, ".");
+  }
+  /* Muotoilu kenttään. Uusi lause alkaa isolla kirjaimella. Jos edellinen sanelu jäi kesken (ei pistettä)
+     ja siitä on alle JATKO_MS, uusi sanelu jatkaa samaa lausetta. Lausetta ei päätetä automaattisesti
+     pisteeseen, jotta sitä voi jatkaa; piste lisätään, kun seuraava lause alkaa myöhemmin. */
+  const JATKO_MS = 30000;
+  let viimeksi = 0;
   function appendText(prev, add) {
-    add = String(add || "").trim();
+    add = valimerkit(String(add || "").trim()).trim();
     if (!add) return prev || "";
+    let cur = String(prev || "").replace(/[ \t]+$/, "");
+    const kesken = cur && !/[.!?:\n]$/.test(cur);
+    const jatkuu = kesken && Date.now() - viimeksi < JATKO_MS;
+    viimeksi = Date.now();
+    if (jatkuu) {
+      // Jatketaan lausetta: pieni alkukirjain, ellei sana ole lyhenne (RH, PKO) tai erisnimi kesken lauseen
+      if (/^[A-ZÅÄÖ][a-zåäö]/.test(add)) add = add.charAt(0).toLowerCase() + add.slice(1);
+      return cur + (/^[,.!?]/.test(add) ? "" : " ") + add;
+    }
     add = add.charAt(0).toUpperCase() + add.slice(1);
-    if (!/[.!?]$/.test(add)) add += ".";
-    let cur = String(prev || "").replace(/\s+$/, "");
-    if (cur && !/[.!?:]$/.test(cur)) cur += ".";
-    return (cur ? cur + " " : "") + add;
+    if (kesken) cur += ".";
+    return (cur ? cur + (/\n$/.test(cur) ? "" : " ") : "") + add;
   }
 
   class Dictation {
@@ -145,7 +166,7 @@
       this.finals = []; this.interim = "";
       if (this.active) {
         // Tunnistus päättyi hiljaisuuteen, mutta painike on yhä pohjassa: uusi kierros.
-        setTimeout(() => { if (this.active && this.mode === "speech") this._startSpeech(true); }, 120);
+        setTimeout(() => { if (this.active && this.mode === "speech") this._startSpeech(true); }, 30);
         this._preview();
       } else {
         const text = this.committed.join(" ");
@@ -198,8 +219,13 @@
       };
       rec.onend = () => this._endRound(rec);
       this.rec = rec;
-      try { rec.start(); if (!restart) this.onState("listening"); }
-      catch (e) { this.rec = null; this.active = false; this.onState("error", "Sanelun käynnistys epäonnistui."); }
+      try { rec.start(); this._uusinnat = 0; if (!restart) this.onState("listening"); }
+      catch (e) {
+        this.rec = null;
+        // Tauon jälkeinen uudelleenkäynnistys voi epäonnistua hetkellisesti (edellinen kierros sulkeutuu): yritetään uudelleen
+        if (restart && this.active && (this._uusinnat = (this._uusinnat || 0) + 1) <= 8) { setTimeout(() => { if (this.active && this.mode === "speech" && !this.rec) this._startSpeech(true); }, 250); return; }
+        this.active = false; this.onState("error", "Sanelun käynnistys epäonnistui.");
+      }
     }
 
     async _startAudio(msg) {

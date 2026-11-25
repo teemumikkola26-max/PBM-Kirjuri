@@ -4,7 +4,7 @@
      tekstintunnistuksen moottori ja kielidata ensimmäisellä käytöllä (oma, pysyvä välimuisti).
    - Pilvi (Microsoft Graph, SharePoint) ja kirjautuminen eivät kulje välimuistin kautta.
    Nosta CACHE-versiota aina, kun julkaiset muutoksia. */
-const CACHE = "kirjuri-v5";
+const CACHE = "kirjuri-v7";
 const LIBCACHE = "kirjuri-lib-1";      // nosta, kun lib/-tiedostot päivitetään
 const SHELL = [
   "./", "index.html", "css/app.css",

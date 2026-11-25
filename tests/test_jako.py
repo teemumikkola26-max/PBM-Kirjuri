@@ -43,13 +43,6 @@ async def main():
     await pg.goto(U+"#/jaa"); await pg.wait_for_timeout(800)
     await pg.click(f'[data-kohde="{kid}"]'); await pg.wait_for_timeout(400); await pg.click('.sheet [data-v="yleiskuva"]'); await pg.wait_for_timeout(1000)
     check("yleiskuva lisätty", await pg.evaluate("(App.S.kohde.yleiskuvat||[]).length")==1)
-    # taito tekstinä
-    taito=json.dumps({"format":"kirjuri-taito","versio":1,"id":"jaettu","nimi":"Jaettu taito","muista":"Testi"})
-    await pg.evaluate(JAA, {"files":[],"teksti":taito})
-    await pg.goto(U+"#/jaa"); await pg.wait_for_timeout(900)
-    if await pg.locator('.sheet [data-v="1"]').count(): await pg.click('.sheet [data-v="1"]')
-    await pg.wait_for_timeout(800)
-    check("jaettu taito tuotu", await pg.evaluate("!!Taidot.hae('jaettu')") and "#/taidot" in await pg.evaluate("location.hash"))
     check("ei JS-virheitä", not errs, errs[:3])
     await b.close()
   srv.terminate(); print("FAILS",fails)
