@@ -22,6 +22,7 @@
   function menetelmat() {
     const k = S.kohde, t = tila(), ids = [];
     k.suunnitelma.filter((p) => !p.pois).forEach((p) => { if (!ids.includes(p.menetelma)) ids.push(p.menetelma); if (p.naytteet && !ids.includes("nayte")) ids.push("nayte"); });
+    if (window.Raportit) Raportit.kalustoMenetelmat(k).forEach((id) => { if (!ids.includes(id)) ids.push(id); });      // raportin menetelmä (K3.3)
     (t.menetelmat || []).forEach((id) => { if (!ids.includes(id)) ids.push(id); });
     return ids.filter((id) => M.MENETELMAT.some((m) => m.id === id));
   }

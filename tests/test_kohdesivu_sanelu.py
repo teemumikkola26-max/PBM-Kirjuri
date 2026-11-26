@@ -31,7 +31,7 @@ async def main():
       App.S.kohde.muistiinpanot=[{id:'m1',teksti:'Huollon mukaan IV-kone pysähtyy viikonloppuisin.',sijainti:null,luotu:Date.now(),muokattu:Date.now()}];await App.Model.saveKohde();}""")
     await pg.goto(U+"#/x"); await pg.goto(U+"#/k/"+kid); await pg.wait_for_timeout(900)
     txt=await pg.inner_text("main")
-    for s in ["Kohde","Tutkimussuunnitelma","Muistiinpanot","Pohjakuva ja liitteet","Viimeistele ja tee raportti","Lisää toimintoja"]:
+    for s in ["Raportti","Uusi kirjaus","Tutkimussuunnitelma","Muistiinpanot","Pohjakuva","Viimeistele ja tee raportti","Lisää toimintoja"]:
       check("osio "+s, s in txt)
     check("alapalkki 3", await pg.locator(".kalapalkki .ka-btn").count()==3)
     check("pilleri", await pg.locator("[data-syncpill]").count()==1, await pg.inner_text("[data-syncpill]"))

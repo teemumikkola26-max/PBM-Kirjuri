@@ -39,6 +39,8 @@
       // Oletus: aistinvarainen tarkastelu (yleisin havainto). Sanelu tai napautus vaihtaa sen.
       // (Kun menetelmä valitaan itse, se kysytään pikavalinnalla eikä oletusta aseteta.)
       if (preset && preset.eiMenetelmaa && !Auto.paalla("menetelma")) n.menetelma = null;
+      // Yhden menetelmän raportti (K3.3, esim. VSS-tarkastus): menetelmä tulee raportista, kamera ei kysy
+      if (!n.menetelma && k.oletusMenetelma && !arvioTila() && M.MENETELMAT.some((m) => m.id === k.oletusMenetelma)) n.menetelma = k.oletusMenetelma;
       if (!n.menetelma && (Auto.paalla("menetelma") || arvioTila()) && M.MENETELMAT.some((m) => m.id === "aisti" && !m.piilotettu)) n.menetelma = "aisti";
       if (n.menetelma) applyMemory(n);
       // Tila ei siirry uudelle menetelmälle: edellisen havainnon tila säilyy vain, kun menetelmä on sama
@@ -556,7 +558,7 @@
     naytaOhje();
     // Uusi havainto: pikavalinta, jos menetelmä (tai tila) valitaan itse. Ei, kun jatketaan
     // olemassa olevaa havaintoa tai kuvaus avattiin tietylle suunnitelman kohdalle.
-    if (mode === "hav" && !saved && !q.menetelma && !q.kohta && !q.kaosa && !q.akkosa && !arvioTila() && Asetukset.get("pv.milloin") !== "ei") pikavalinta(true);
+    if (mode === "hav" && !saved && !q.menetelma && !k.oletusMenetelma && !q.kohta && !q.kaosa && !q.akkosa && !arvioTila() && Asetukset.get("pv.milloin") !== "ei") pikavalinta(true);
 
     /* Pikavalinta: tila (jos valitaan itse) ja menetelmä yhdellä näytöllä. Menetelmän napautus sulkee.
        Molemmissa on hakukenttä: kirjoitus rajaa listaa, ja jos osumaa ei ole, sama kenttä lisää uuden. */

@@ -84,7 +84,7 @@
       '<div class="hint" style="margin:4px 0 10px">Kenttänumerot: <b>' + esc(u && u.sarja ? u.sarja + "-01, " + u.sarja + "-02 …" : "–") + "</b> (vain kentällä; raportille havainnot numeroidaan H01, H02 …)</div>" +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' + (Cloud.kirjautunut ? '<button class="btn btn-sm" data-sarja>Vaihda kirjaimet</button>' : '<button class="btn btn-sm btn-primary" data-relogin>Kirjaudu</button>') +
       '<button class="btn btn-sm" data-logout>Kirjaudu ulos</button></div>' +
-      '<div data-pilvikohteet></div></div></section>';
+      "</div></section>";      // tiimin pilvikohteet näkyvät etusivulla omana listanaan (K3.3)
   }
   async function bindHome(root) {
     if (!Cloud.enabled) return;

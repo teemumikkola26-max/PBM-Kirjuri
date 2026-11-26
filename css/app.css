@@ -957,3 +957,43 @@ table.mittarit th,table.mittarit td{text-align:left;padding:4px 6px;border-botto
 .cp-opas{margin:8px 0 0;padding:10px 12px;border-radius:12px;background:rgba(255,211,138,.14);border:1px solid rgba(255,211,138,.45);color:#f3efe6;font-size:14.5px;line-height:1.4}
 .cp-opas b{color:#ffd38a}
 .qp-vihje{margin:-2px 0 10px;font-size:13px;color:#c9c4ba}
+
+/* ---------- K3.3 (26.11.2026): selkeytetty käyttöliittymä ---------- */
+.tb-back-t{flex:0 0 auto;width:auto;padding:0 10px 0 2px;gap:2px;color:var(--safety);font-weight:650;font-size:15.5px;text-decoration:none;white-space:nowrap}
+.tb-back-t .i{width:20px;height:20px}
+.tb-asetus{flex:0 0 var(--tap);height:var(--tap);display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--ink)}
+.tb-asetus:active{background:#f2f0ea}
+.uk-iso{min-height:56px;font-size:17px;margin-bottom:14px}
+.kr-puute{color:var(--muted)!important;font-weight:600}
+/* Uusi kohde ja raportin valinta */
+.uusi-kohde{display:flex;flex-direction:column;gap:10px}
+.uk-paketti{display:flex;align-items:center;gap:12px;background:var(--raised);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.uk-paketti .t{font-weight:700}.uk-paketti .s{font-size:14px;color:var(--muted)}
+.uk-paketti .btn{flex-shrink:0}
+.uk-ots{display:block;font-size:17px;font-weight:650;margin-top:8px}
+.rv-lista{display:flex;flex-direction:column;gap:8px}
+.rv-nappi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:58px;padding:9px 14px;border:1px solid var(--line-strong);border-radius:12px;background:var(--raised);cursor:pointer}
+.rv-nappi[aria-pressed=true]{border:2px solid var(--safety);background:#fbe9ec;padding:8px 13px}
+.rv-nappi .rv-n{font-size:16px;font-weight:650}.rv-nappi .rv-s{font-size:14px;color:var(--muted)}
+.rv-muu{border-style:dashed}
+.rv-ryhma{font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+/* Kohdesivu */
+.rv-rivi{display:flex;align-items:center;gap:10px;background:var(--raised);border:1px solid var(--line);border-radius:var(--radius);padding:8px 8px 8px 14px;margin-bottom:12px}
+.rv-rivi .rv-k{font-size:13px;color:var(--muted)}.rv-rivi .rv-n{font-size:16px;font-weight:700}
+.rv-rivi .rv-lahde{font-size:13px;color:var(--ok)}.rv-rivi .rv-lahde.ei{color:var(--muted)}
+.u-paa{display:flex;align-items:center;gap:16px;background:var(--safety);color:#fff;border-radius:16px;padding:18px;margin-bottom:12px;text-decoration:none}
+.u-paa:active{background:var(--safety-dark)}
+.u-paa-ik{width:56px;height:56px;border-radius:28px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.u-paa-ik .i{width:30px;height:30px;stroke:#fff}
+.u-paa .grow{display:flex;flex-direction:column}
+.u-paa-t{font-size:20px;font-weight:700}.u-paa-s{font-size:15px}
+.u-pk-ots{font-size:18px;margin:0 0 10px}
+.u-tabs{display:flex;gap:4px;background:#eeece5;padding:4px;border-radius:12px;margin-bottom:10px}
+.u-tab{flex:1;min-height:44px;border:0;border-radius:9px;background:transparent;font-size:15px;cursor:pointer}
+.u-tab[aria-selected=true]{background:var(--brand);color:#fff;font-weight:700}
+.u-plan{cursor:pointer}
+.u-pk-vihje{margin:8px 0 10px}
+.u-eipohjaa{border:1px dashed var(--line-strong);border-radius:10px;padding:14px;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.u-eipohjaa .u-sub{margin:0}
+a.row.u-kal,a.row.u-lt{background:var(--raised);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;text-decoration:none;color:inherit}
+.rv-rivi .grow,.uk-paketti .grow,.u-paa .grow{flex:1;min-width:0}

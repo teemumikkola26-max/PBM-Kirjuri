@@ -62,6 +62,13 @@
       const tyhja = !k[f] || (f === "nimi" && k.nimiTilapainen);      // uuden kohteen väliaikainen nimi korvataan
       lisa({ t: "kohde", ryhma: "Kohde", k: f, arvo: v, otsikko: nimi, ote: lahdeTeksti(kt[f]), huom: tyhja ? "" : "Nykyinen: " + k[f], valittu: tyhja, muokattava: true });
     });
+    // Raportti (K3.3): paketin kenttä "raportti" tai päättely sisällöstä. Epävarma jää valitsematta.
+    const rp = window.Raportit ? Raportit.paketista(j) : null;
+    if (rp && rp.id !== k.raportti) {
+      const nyt = Raportit.nimi(k);
+      lisa({ t: "raportti", ryhma: "Raportti", id: rp.id, otsikko: Raportit.hae(rp.id).nimi, ote: rp.peruste,
+        valittu: rp.varma && !nyt, huom: nyt ? "Nyt valittu: " + nyt : rp.varma ? "" : "Tarkista ennen valintaa" });
+    }
     // Suunnitelma
     const nimiId = (m) => {
       if (!m) return null;
@@ -201,6 +208,7 @@
         e.naytteet ? { naytteet: e.naytteet } : {}));
       n++;
     });
+    valitut.filter((e) => e.t === "raportti").forEach((e) => { Raportit.aseta(k, e.id, e.ote || "lähtötietopaketti"); n++; });
     const pohjat = [];
     valitut.filter((e) => e.t === "kerros").forEach((e) => {
       let ker = k.kerrokset.find((x) => norm(x.nimi) === norm(e.nimi));

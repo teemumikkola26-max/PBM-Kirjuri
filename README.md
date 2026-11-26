@@ -4,7 +4,7 @@ PBM Rakennustutkimuksen kenttäsovellus kuntotutkimuksiin, katselmuksiin, kuntoa
 
 Osa RTA-opinnäytetyön kehitystyötä (Teemu Mikkola, 2026).
 
-## Tila: versio K3
+## Tila: versio K3.3
 
 | Valmis | Kuvaus |
 |---|---|
@@ -23,6 +23,8 @@ Osa RTA-opinnäytetyön kehitystyötä (Teemu Mikkola, 2026).
 | Taidot (K3) | Käyttäjän omat toimintatavat ilman koodimuutoksia: oletukset, kysy / älä kysy, Muista, lyhenteet, puhekomennot, raportille-ohjeet. Tuonti tekstinä (*Liitä taito*), tiedostona tai puhelimen jakovalikosta; muokkaus lomakkeella, versiohistoria. Muoto ja menetelmien kentät: [TAIDOT.md](TAIDOT.md) |
 | Omat opit (K3) | Sovellus ehdottaa toistuvista valinnoista oletuksia, toistuvista *Ei tiedossa* -merkinnöistä ”älä kysy” ja käsin korjatuista lyhenteistä tunnistusta; tutkija hyväksyy. Opit kootaan taidoiksi |
 | Käyttömittarit (K3) | Vain lukuja (kirjausten määrä ja kesto, korjaukset, kumotut kuvat, Ei tiedossa, puhekomennot); yhteenveto Claudelle kehitystä varten |
+| Selkeytetty käyttöliittymä (K3.3) | Etusivu = Omat kohteet (asetukset, tili ja tietosuoja rattaan takana ja sivun lopussa). Paluupainikkeessa lukee, minne pääsee (← Kohteet, ← Kohde, ← Kirjaus). Kohdesivulla raportti, iso pääpainike *Uusi kirjaus* / *Uusi havainto* ja pohjakuva kerrosvälilehtineen: huoneen napautus aloittaa kirjauksen siihen huoneeseen. *Mukaan kentälle* -kortti ennen ensimmäistä kirjausta. Puuttuvat tiedot neutraalisti: *Raporttia varten vielä* |
+| Raporttityyppi (K3.3) | Uusi kohde kysyy *Mikä raportti kohteesta tehdään?*: neljä yleisintä (katselmus, tutkimusseloste, kuntoarvio, asuntokaupan kuntotarkastus) ja *Muu raportti* (RH, märkätila, kalvo, veto, merkkiaine, VSS). Yhden menetelmän raportti valitsee menetelmän kameraan ja kalustolistaan. Lähtötietopaketti tuo raportin (kenttä `raportti`) tai se päätellään paketista; epävarma jää valitsematta. Vaihto kohdesivulta (`js/raportit.js`) |
 
 Periaate: uudet toimintatavat tuodaan taitoina, menetelmät ja kentät Menetelmät-sivulla ja raporttipohjat Word-tiedostoina. Sovelluksen koodia muutetaan vain, kun tarvitaan kokonaan uusi rakennuspalikka.
 
