@@ -55,11 +55,12 @@
       return '<a class="row seur-link" href="#/k/' + k.id + '/seuranta" style="text-decoration:none;color:inherit;margin:-4px 0 12px;border-radius:12px">' +
         icon("pin") + '<div class="grow"><div class="t">Olosuhdeseuranta</div><div class="s">Mittalaitteiden sijainnit ja tunnukset</div></div>' + icon("back", "flip") + "</a>";
     }
+    const kaynnissa = all.filter((x) => !x.loppu).length;
     return '<section class="card"><div class="card-h"><h2>Olosuhdeseuranta</h2><a class="link" href="#/k/' + k.id + '/seuranta">' +
-      (all.length ? all.length + " mittalaitetta" : "Avaa") + "</a></div>" +
+      (all.length ? (kaynnissa ? "Seurannassa " + kaynnissa + (kaynnissa === 1 ? " laite" : " laitetta") : "Kaikki noudettu") : "Avaa") + "</a></div>" +
       '<div class="card-b">' +
       (all.length ? '<div class="chips" style="margin-bottom:10px">' + sorted().filter((x) => !tyhja(x)).map((x) =>
-        '<a class="chip" href="#/k/' + k.id + "/seuranta/" + x.id + '" style="text-decoration:none">' + esc(tunnus(x) || "Ei tunnusta") +
+        '<a class="chip" href="#/k/' + k.id + "/seuranta/" + x.id + '" style="text-decoration:none">' + esc(tunnus(x) || "Ei tunnusta") + (x.loppu ? " · noudettu" : "") +
         (x.sijainti.tilaId ? ' <span class="mp-tag">' + esc(Model.tilaNimi(Model.tila(x.sijainti.tilaId))) + "</span>" : "") +
         (puutteet(x).length ? ' <span class="warn-dot" title="Tietoja puuttuu">!</span>' : "") + "</a>").join("") + "</div>" : "") +
       (vajaat ? '<p class="hint" style="margin:0 0 10px">' + vajaat + " mittalaitteelta puuttuu tietoja.</p>" : "") +
@@ -144,6 +145,10 @@
           (e && e.planId && x.sijainti.piste ? '<div class="plan-wrap seur-mini" data-mini><img src="' + Model.url(e.planId) + '" alt="" draggable="false">' +
             pinsHtml(e.id, { except: x.id, dim: true }) + '<span class="pin mir sel" style="left:' + (x.sijainti.piste.x * 100) + "%;top:" + (x.sijainti.piste.y * 100) + '%">' + esc(tunnus(x) || PREFIX) + "</span></div>" : "") +
         "</div></section>" +
+        '<section class="card"><div class="card-h"><h2>Seurantajakso</h2></div><div class="card-b">' +
+          '<p style="margin:0 0 10px">' + esc(x.loppu ? UI.pvm(x.alku || x.created) + "–" + UI.pvm(x.loppu) + " · laite noudettu" : "Alkaen " + UI.pvm(x.alku || x.created) + " · käynnissä") + "</p>" +
+          (x.loppu ? '<button class="btn btn-sm" data-a="jatkuu">Peru: seuranta jatkuu</button>' : '<button class="btn btn-primary" data-a="paattyi">' + icon("check") + "Seuranta päättyi – laite noudettu</button>") +
+        "</div></section>" +
         (miss.length ? '<div class="alert info">' + icon("alert") + "<div>Puuttuu: " + esc(miss.join(", ")) + ".</div></div>" : "") +
         '<div class="row-btns" style="margin-top:4px"><a class="btn" href="#/k/' + k.id + '/seuranta">Valmis</a>' +
           '<button class="btn btn-primary" data-a="seuraava">' + icon("plus") + "Seuraava laite</button></div>" +
@@ -207,6 +212,8 @@
           x.sijainti = { kerrosId: s.kerrosId || null, tilaId: s.tilaId || null, piste: s.piste || null };
           await save(); paint();
         }, { noPart: true, title: "Mittalaitteen sijainti", mirExcept: x.id, hint: "Napauta laitteen kohtaa pohjakuvassa" });
+      } else if (a === "paattyi") { x.loppu = Date.now(); await save(); toast((tunnus(x) || "Laite") + ": seuranta päättyi"); paint();
+      } else if (a === "jatkuu") { delete x.loppu; await save(); paint();
       } else if (a === "seuraava") {
         if (x.nro == null && root.querySelector("[data-nro]").value) { toast("Tarkista tunnus ennen seuraavaa laitetta.", 2600); return; }
         location.hash = "#/k/" + k.id + "/seuranta/uusi";
@@ -229,5 +236,23 @@
     if (id) await viewLaite(id); else await viewList();
   }
 
-  window.Seuranta = { view, pinsHtml, kohdeCard, puutteet, tunnus, list, sorted, PREFIX };
+  /* K3.3: olosuhdeseuranta tavallisena kirjauksena. Sanelu "olosuhdeseuranta, loggeri 3, korkeus 1,1 metriä"
+     tekee kirjauksesta mittalaitteen: tunnus sanelusta, tila ja kohta kirjauksesta, kuvat sijoittelusta. */
+  const SANAT = /olosuhdeseuran|olosuhdemittari|dataloggeri|loggeri|\bmir ?\d/i;
+  const onSeuranta = (teksti) => SANAT.test(String(teksti || ""));
+  async function kirjauksesta(h) {
+    const m = String(h.sanelu || "").match(/(?:mir|loggeri|laite|mittari)\s*(?:nro\.?\s*)?(\d{1,2})/i);
+    let nro = m ? +m[1] : null;
+    if (nro && list().some((y) => y.nro === nro)) nro = null;      // sama tunnus jo käytössä: tutkija korjaa
+    const x = { id: DB.uid("mir_"), nro, sijainti: JSON.parse(JSON.stringify(h.sijainti || {})), kuvat: (h.kuvat || []).slice(), muistiinpano: h.sanelu || "",
+      alku: Date.now(), created: Date.now(), updated: Date.now(), havainnosta: h.id };
+    list().push(x);
+    await Model.saveKohde();
+    // Kirjaus siirtyy laitteeksi: havainto poistetaan, kuvat jäävät laitteelle
+    await DB.del("havainnot", h.id);
+    S.havainnot = S.havainnot.filter((y) => y.id !== h.id);
+    if (S.kohde.pilvi && window.Sync) Sync.soon();
+    return x;
+  }
+  window.Seuranta = { view, pinsHtml, kohdeCard, puutteet, tunnus, list, sorted, PREFIX, onSeuranta, kirjauksesta };
 })();

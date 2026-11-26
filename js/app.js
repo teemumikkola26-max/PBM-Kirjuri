@@ -498,7 +498,9 @@
       '<main class="view kohde-uusi">' + KaLahto.tilaHtml() +
       Raportit.riviHtml(k) +
       '<a class="u-paa" href="#/k/' + k.id + '/kuvaus"><span class="u-paa-ik">' + icon("cam") + '</span><span class="grow"><span class="u-paa-t">' + ohje + '</span><span class="u-paa-s">Ota kuva ja kerro, mitä näet</span></span></a>' +
-      pohja + kal + seur +
+      pohja + (window.Osiot ? Osiot.html(k) : "") +
+      (window.Seuranta && ((k.seuranta || []).length || k.suunnitelma.some((p) => M.menetelma(p.menetelma).seuranta)) ? Seuranta.kohdeCard() : "") +
+      kal + seur +
       (hu.length ? (hu.length <= 2 ? '<div class="alert info">' + icon("alert") + "<div><b>Huomioitavaa:</b> " + hu.map((h) => esc(h.teksti)).join("<br>") + "</div></div>"
         : '<details class="alert info hu-taitto">' + '<summary>' + icon("alert") + "<div><b>Huomioitavaa (" + hu.length + "):</b> " + esc(hu[0].teksti) + ' <span class="hu-lisaa">Näytä kaikki</span></div></summary>' +
           '<div class="hu-muut">' + hu.slice(1).map((h) => esc(h.teksti)).join("<br>") + "</div></details>") : "") +
@@ -510,6 +512,8 @@
         '<a class="row" href="#/k/' + k.id + '/tiedot" style="text-decoration:none;color:inherit">' + icon("edit") + '<div class="grow"><div class="t">Kohteen tiedot</div><div class="s">' + esc([k.osoite, k.projektinro].filter(Boolean).join(" · ") || "Nimi, osoite, projektinumero, vienti") + "</div></div>" + icon("back", "flip") + "</a>" +
         lisaaRivit(k) + "</div></details>" +
       "</main>" + bottomnav("kohde");
+    const mainEl = app().querySelector("main");
+    if (mainEl && window.Osiot) mainEl.addEventListener("click", (e) => { if (e.target.closest(".os-kortti")) Osiot.klikki(e, render); });
     const up = app().querySelector("[data-uplan]");
     if (up && ker) up.addEventListener("click", (e) => {
       const o = e.target.closest("[data-obs]");
@@ -520,6 +524,11 @@
       if (t) location.hash = "#/k/" + k.id + "/kuvaus?tila=" + t.id + "&kerros=" + ker.id;
       else location.hash = "#/k/" + k.id + "/pohja?kerros=" + ker.id;
     });
+    // Kamerasta Valmis (K3.3): "Kirjaus tallennettu" ja + Seuraava
+    if (S.jalkiToast) {
+      const jt = S.jalkiToast; S.jalkiToast = null;
+      setTimeout(() => toast(jt.msg, 4500, jt.act ? { label: jt.act.label, fn: () => { location.hash = jt.act.href; } } : null), 450);
+    }
     const kuuntele = () => { if (location.hash === "#/k/" + k.id) render(); };
     document.addEventListener("ks-lahto", kuuntele);
     S.cleanup = () => document.removeEventListener("ks-lahto", kuuntele);

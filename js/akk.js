@@ -370,5 +370,5 @@
     return L;
   }
 
-  window.AKK = { view, kohdeCard, puutteet, vienti, vientiMd, tunnistaOsio, aktiivinen, osio, edistyminen, OSIOT: D.osiot };
+  window.AKK = { view, kohdeCard, puutteet, vienti, vientiMd, tunnistaOsio, aktiivinen, osio, edistyminen, OSIOT: D.osiot, tila, osioTila, kayty, SYYT };
 })();

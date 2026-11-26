@@ -73,7 +73,7 @@
     document.getElementById("app").innerHTML =
       '<div class="cam">' +
       '<div class="cam-top">' +
-      '<button class="cam-round" data-c="close" aria-label="Tallenna ja sulje">' + icon("close") + "</button>" +
+      '<button class="cam-paluu" data-c="close" aria-label="Tallenna ja palaa kohteeseen">' + icon("back") + "<span>Kohde</span></button>" +
       '<button class="loc-chip" data-c="loc">' + icon("pin") + '<span class="txt"><b data-loc></b><small data-locsub></small></span><span class="ch">Vaihda</span></button>' +
       '<button class="cam-round hidden" data-c="valo" aria-label="Salama" aria-pressed="false">' + icon("flash") + "</button>" +
       '<button class="cam-round" data-c="ohje" aria-label="Ohje">?</button>' +
@@ -97,9 +97,11 @@
       '<button class="card-link" data-c="card"><span data-cl>Täydennä tiedot</span>' + icon("back", "flip") + "</button></div>" +
       "</div>" +
       '<div class="cam-bottom">' +
-      '<button class="cam-side" data-c="next"><span class="c">' + icon("plus") + "</span>Tallenna ja seuraava</button>" +
-      '<button class="shutter" data-c="shot" aria-label="Ota kuva"><span></span></button>' +
-      '<button class="cam-side mic" data-mic aria-label="Sanele: pidä pohjassa"><span class="c" data-micic>' + icon("mic") + '</span><span data-miclbl>Pidä: sanele</span></button>' +
+      // K3.3: kolme painiketta – Sanele, Ota kuva, Valmis. Valmis tallentaa ja vie kohteeseen; Seuraava on ilmoituksessa
+      // ja puhekomentona (”seuraava”).
+      '<button class="cam-side mic" data-mic aria-label="Sanele"><span class="c" data-micic>' + icon("mic") + '</span><span data-miclbl>Sanele</span></button>' +
+      '<span class="cam-shot"><button class="shutter" data-c="shot" aria-label="Ota kuva"><span></span></button><span class="cam-shot-l">Ota kuva</span></span>' +
+      '<button class="cam-side cam-valmis" data-c="valmis" aria-label="Valmis: tallenna ja palaa kohteeseen"><span class="c">' + icon("check") + '</span><span data-vlbl>Valmis</span></button>' +
       "</div></div>";
 
     const root = document.querySelector(".cam");
@@ -189,7 +191,7 @@
       if (h.menetelma !== before) applyMemory(h);
       paintLoc(); paintMethods(); paintTulos(); paintStatus();
       const shown = changes.filter((c) => ["menetelmä", "tulos", "tila", "rakenneosa", "rakennusosa", "kenttä", "taulukko"].includes(c.kentta));
-      if (shown.length) toast("Sanelusta: " + shown.slice(0, 3).map((c) => c.arvo).join(", ") + (shown.length > 3 ? " ja " + (shown.length - 3) + " muuta" : ""), 3000);
+      if (shown.length && root.isConnected) toast("Sanelusta: " + shown.slice(0, 3).map((c) => c.arvo).join(", ") + (shown.length > 3 ? " ja " + (shown.length - 3) + " muuta" : ""), 3000);
       if (saved) persist();
     }
     const autoSoon = UI.debounce(runAuto, 900);
@@ -204,7 +206,8 @@
       if (!nayta) return;
       el.innerHTML = !h.kuvat.length
         ? '<b>1. Ota kuva</b> laukaisimesta. Menetelmää tai tilaa ei tarvitse valita ensin.'
-        : '<b>2. Pidä mikrofonia pohjassa</b> ja kerro, mitä teet ja näet, esim. ”Rakenneavaus ulkoseinän alaosaan, eriste kostea”. <b>3.</b> Tallenna ja seuraava.';
+        : !(h.sanelu || "").trim() ? '<b>2. Sanele</b> ja kerro, mitä teet ja näet, esim. ”Rakenneavaus ulkoseinän alaosaan, eriste kostea”.'
+        : '<b>3. Paina Valmis.</b> Kirjaus tallentuu.';
     }
     function paintStatus() {
       paintOpas();
@@ -334,7 +337,7 @@
       }
     });
     const micBtn = DictButton.bind($("[data-mic]"), dict, {
-      labelEl: $("[data-miclbl]"),
+      labelEl: $("[data-miclbl]"), idle: "Sanele",
       onChange: (st) => {
         $("[data-micic]").innerHTML = st === "idle" ? icon("mic") : icon("stop");
         $("[data-mic]").classList.toggle("mic-on", st !== "idle");
@@ -444,6 +447,23 @@
       if (toCard && saved) location.hash = "#/k/" + k.id + "/h/" + h.id;
       else location.hash = "#/k/" + k.id;
     }
+    /* Valmis (K3.3): tallenna ja palaa kohteeseen. Kohdesivu kertoo "Kirjaus tallennettu" ja tarjoaa Seuraavan
+       (sama menetelmä, tila ja osio). Tyhjä havainto: vain paluu. */
+    async function valmis() {
+      await flush();
+      if (saved && !arvioTila() && window.Seuranta && Seuranta.onSeuranta(h.sanelu)) {
+        // Olosuhdeseuranta tavallisena kirjauksena (K3.3): kirjaus muuttuu mittalaitteeksi
+        const x = await Seuranta.kirjauksesta(h);
+        App.S.jalkiToast = { msg: "Mittalaite " + (Seuranta.tunnus(x) || "(tunnus puuttuu)") + " lisätty olosuhdeseurantaan", act: { label: "Avaa", href: "#/k/" + k.id + "/seuranta/" + x.id } };
+        location.hash = "#/k/" + k.id; return;
+      }
+      if (saved) {
+        const q = ["menetelma=" + (h.menetelma || ""), h.sijainti && h.sijainti.tilaId ? "tila=" + h.sijainti.tilaId : "", h.sijainti && h.sijainti.kerrosId ? "kerros=" + h.sijainti.kerrosId : "",
+          h.kaOsa ? "kaosa=" + h.kaOsa : "", h.akkOsa ? "akkosa=" + h.akkOsa : "", h.suunnitelmaId ? "kohta=" + h.suunnitelmaId : ""].filter((x) => x && !/=$/.test(x)).join("&");
+        App.S.jalkiToast = { msg: (arvioTila() ? "Havainto " : "Kirjaus ") + UI.nro(h) + " tallennettu", act: { label: "+ Seuraava", href: "#/k/" + k.id + "/kuvaus" + (q ? "?" + q : "") } };
+      }
+      location.hash = "#/k/" + k.id;
+    }
     async function next() {
       await flush();
       if (!saved) { toast("Ota kuva tai kirjoita havainto ensin"); return; }
@@ -537,6 +557,7 @@
       }
       else if (c === "card" || c === "need") finish(true);
       else if (c === "close") finish(false);
+      else if (c === "valmis") valmis();
       else if (c === "ohje") naytaOhje(true);
       else if (c === "valo") {
         const on = b.getAttribute("aria-pressed") !== "true";
@@ -706,7 +727,7 @@
         "<li><b>Ota kuva</b> laukaisimesta. Kuvia voi ottaa useita. Menetelmää ja tilaa ei tarvitse valita ensin.</li>" +
         "<li><b>Pidä mikrofonia pohjassa</b> ja kerro, mitä teet ja näet: ”Rakenneavaus ulkoseinän alaosaan 101, eriste kostea”. Menetelmä ja tila tunnistetaan puheesta. Tauot eivät katkaise sanelua, ja seuraava sanelu jatkaa kesken jäänyttä lausetta. ”Piste” päättää lauseen.</li>" +
         "<li><b>Menetelmän ja tilan voi valita myös itse</b> kuvan päältä ja yläreunasta.</li>" +
-        "<li><b>Tallenna ja seuraava</b> aloittaa uuden kirjauksen samassa tilassa. Sanelun lopussa voit sanoa ”seuraava”.</li>" +
+        "<li><b>Valmis</b> tallentaa ja vie kohteeseen. Ilmoituksen <b>+ Seuraava</b> aloittaa uuden kirjauksen samassa tilassa; sanelun lopussa voit myös sanoa ”seuraava”.</li>" +
         "<li><b>Puheohjaus:</b> menetelmä sanelun alussa (”PKO …”, ”RH-mittaus …”) valitsee menetelmän. ”Kumoa” poistaa viimeisen kuvan.</li>" +
         "<li><b>Täydennä tiedot</b> avaa havainnon kaikki tiedot ja mittauskentät. Sen voi avata myös ilman kuvaa.</li>" +
         "<li><b>Yleiskuva</b>-välilehdellä otat kuvia ilman havaintoa (julkisivut, tilat).</li></ol>" +

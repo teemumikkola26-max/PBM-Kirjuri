@@ -114,19 +114,22 @@
     const root = document.getElementById("app");
     let pilvi = null, varoitukset = null;
     async function paint() {
-      const omat = await lista();
+      // K3.3: kohteen raportin pohja ensimmäisenä ja merkittynä
+      const sopii = (n) => window.Raportit && Raportit.pohjaSopii(k, n);
+      const omat = (await lista()).sort((a, b) => sopii(b.nimi) - sopii(a.nimi));
+      const rnimi = window.Raportit ? Raportit.nimi(k) : "";
       root.innerHTML = App.topbar({ title: "Word-raportti", sub: k.nimi, back: "#/k/" + k.id + "/lahto" }) +
         '<main class="view no-nav">' +
         '<p class="hint" style="margin:0 0 12px">Raportti tehdään yrityksen Word-pohjasta. Pohjan merkinnät ({{kohde}}, {{kirjaukset}}, {{toista:rh}} …) ovat samat kuin Kenttälomakkeessa. Raportti muodostetaan puhelimessa; tietoja ei lähetetä muualle.</p>' +
         '<section class="card"><div class="card-h"><h2>Pohjat tällä laitteella</h2><span class="meta">' + omat.length + "</span></div>" +
-        (omat.length ? omat.map((p) => '<div class="row"><div class="grow"><div class="t">' + esc(p.nimi) + '</div><div class="s">' + esc((p.lahde === "sharepoint" ? "SharePoint · " : "") + UI.pvm(p.lisatty)) + "</div></div>" +
+        (omat.length ? omat.map((p) => '<div class="row"><div class="grow"><div class="t">' + esc(p.nimi) + '</div><div class="s">' + (sopii(p.nimi) ? '<b class="vihrea">✓ ' + esc(rnimi) + "</b> · " : "") + esc((p.lahde === "sharepoint" ? "SharePoint · " : "") + UI.pvm(p.lisatty)) + "</div></div>" +
           '<button class="btn btn-sm btn-primary" data-a="tee" data-id="' + esc(p.id) + '">' + icon("download") + "Tee raportti</button>" +
           '<button class="icon-btn" data-a="poista" data-id="' + esc(p.id) + '" aria-label="Poista pohja">' + icon("trash") + "</button></div>").join("")
           : '<div class="empty">Ei pohjia. Lisää .docx-pohja tiedostosta' + (window.Cloud && Cloud.enabled ? " tai hae SharePointista" : "") + ".</div>") +
         '<div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap;padding-top:10px"><button class="btn" data-a="lisaa">' + icon("plus") + "Lisää pohja (.docx)</button>" +
         (window.Cloud && Cloud.enabled && Cloud.palvelu ? '<button class="btn" data-a="pilvi">' + icon("download") + "Hae SharePointista</button>" : "") + "</div></section>" +
         (pilvi ? '<section class="card"><div class="card-h"><h2>SharePoint: Raporttipohjat</h2></div>' +
-          (pilvi.length ? pilvi.map((p) => '<div class="row"><div class="grow"><div class="t">' + esc(p.nimi) + "</div></div>" +
+          (pilvi.length ? pilvi.slice().sort((a, b) => sopii(b.nimi) - sopii(a.nimi)).map((p) => '<div class="row"><div class="grow"><div class="t">' + esc(p.nimi) + "</div>" + (sopii(p.nimi) ? '<div class="s"><b class="vihrea">✓ ' + esc(rnimi) + "</b></div>" : "") + "</div>" +
             '<button class="btn btn-sm" data-a="lataa" data-n="' + esc(p.nimi) + '">Lataa laitteelle</button></div>').join("")
             : '<div class="empty">Kirjaston kansiossa Raporttipohjat ei ole .docx-pohjia.</div>') + "</section>" : "") +
         (varoitukset && varoitukset.length ? '<section class="card"><div class="card-h"><h2>Tarkista raportissa</h2></div><div class="card-b"><ul style="margin:0;padding-left:18px">' +

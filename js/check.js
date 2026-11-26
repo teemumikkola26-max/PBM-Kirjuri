@@ -5,7 +5,7 @@
    ========================================================================= */
 (function () {
   "use strict";
-  const { icon, esc, promptSheet, confirmSheet, nro } = UI;
+  const { icon, esc, promptSheet, confirmSheet, nro, toast } = UI;
   const { S, Model } = App;
 
   function tyhja(v) { return v == null || String(v).trim() === ""; }
@@ -146,6 +146,7 @@
           '<button class="btn btn-sm btn-dark" data-a="do" data-t="' + t + '" data-id="' + x.id + '">' + esc(x.toimintoTeksti) + "</button>" +
           (t === "kohta" ? '<button class="btn btn-sm" data-a="pois" data-id="' + x.id + '">Jätä pois + syy</button>' : "") +
           (t === "tila" ? '<button class="btn btn-sm" data-a="eip" data-id="' + x.id + '">Ei pääsyä + syy</button>' : "") +
+          (t === "akk" ? '<button class="btn btn-sm btn-primary" data-a="akkLoput">Merkitse loput kunnossa</button>' : "") +
           "</div></div>";
       });
       body += "</div></details>";
@@ -155,6 +156,8 @@
     root.innerHTML = App.topbar({ title: "Viimeistele kohde", sub: "Tarkista ennen kuin lähdet", back: "#/k/" + k.id }) +
       '<main class="view">' +
       '<div class="ct-tiles">' + tile(S.havainnot.length, "havaintoa", "ok") + tile(list.length, "täydennettävää", list.length ? "warn" : "ok") + tile(rajattu, "rajattu", "skip") + "</div>" +
+      ((k.seuranta || []).filter((x) => x.nro && !x.loppu).length ? '<div class="alert info">' + icon("alert") + "<div><b>Seurannassa " + (k.seuranta || []).filter((x) => x.nro && !x.loppu).length +
+        " mittalaitetta:</b> " + esc((k.seuranta || []).filter((x) => x.nro && !x.loppu).map((x) => Seuranta.tunnus(x)).join(", ")) + ". Muista noutaa laitteet ja merkitä Seuranta päättyi.</div></div>" : "") +
       (!k.suunnitelma.length ? '<div class="alert info">' + icon("alert") + "<div>Tutkimussuunnitelmaa ei ole kirjattu, joten tarkistus kattaa vain tilat ja havainnot.</div></div>" : "") +
       (list.length ? body : '<div class="done-ok">' + icon("ok") + "Ei puutteita. Aineisto on valmis vietäväksi.</div>") +
       '<div style="margin-top:18px"><button class="btn btn-primary btn-block" data-a="' + (list.length ? "exportAnyway" : "export") + '">' + icon("download") + "Vie aineisto raportointiin</button>" +
@@ -178,6 +181,11 @@
         else if (b.dataset.t === "akk") location.hash = "#/k/" + k.id + "/akk";
         else if (b.dataset.t === "seuranta") location.hash = "#/k/" + k.id + "/seuranta/" + id;
         else location.hash = "#/k/" + k.id + "/h/" + id + "?puutteet=1";
+      } else if (a === "akkLoput") {
+        // K3.3: kuittaus yhteenvetona; osio ilman havaintoja ja merkintöjä on kunnossa (ei huomautettavaa)
+        const n = AKK.OSIOT.filter((d) => !AKK.kayty(d.id));
+        n.forEach((d) => { AKK.tila(d.id).kayty = true; });
+        await Model.saveKohde(); toast(n.length + (n.length === 1 ? " osio merkitty" : " osiota merkitty") + " kunnossa"); App.render();
       } else if (a === "pois") {
         const syy = await promptSheet({ title: "Miksi kohta jätetään pois?", label: "Syy (näkyy raportissa rajauksena)", required: true, multiline: true });
         if (syy == null) return;

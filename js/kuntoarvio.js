@@ -414,5 +414,5 @@
     };
   }
 
-  window.Kuntoarvio = { view, kohdeCard, puutteet, vienti, tunnistaOsa, aktiivinen, laskelma, osa, OSAT: D.OSAT, edistyminen };
+  window.Kuntoarvio = { view, kohdeCard, puutteet, vienti, tunnistaOsa, aktiivinen, laskelma, osa, OSAT: D.OSAT, edistyminen, tila, arvioitu };
 })();

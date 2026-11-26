@@ -997,3 +997,31 @@ table.mittarit th,table.mittarit td{text-align:left;padding:4px 6px;border-botto
 .u-eipohjaa .u-sub{margin:0}
 a.row.u-kal,a.row.u-lt{background:var(--raised);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;text-decoration:none;color:inherit}
 .rv-rivi .grow,.uk-paketti .grow,.u-paa .grow{flex:1;min-width:0}
+/* Kamera K3.3: ← Kohde, Sanele – Ota kuva – Valmis */
+.cam-paluu{display:flex;align-items:center;gap:2px;height:var(--tap);padding:0 12px 0 6px;border-radius:22px;background:rgba(255,255,255,.12);border:none;color:#fff;font-weight:650;font-size:15.5px;cursor:pointer;flex:0 0 auto}
+.cam-paluu .i{width:20px;height:20px}
+.cam-shot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.cam-shot-l{font-size:12px;color:#dfe3e8}
+.cam-valmis .c{background:var(--ok)}
+.cam-valmis{color:#fff;font-weight:650}
+/* Osiot kohdesivulla (K3.3) */
+.os-r{border-top:1px solid #eeece5}
+.os-p{width:100%;min-height:48px;border:0;background:transparent;display:flex;align-items:center;gap:10px;padding:6px 0;text-align:left;cursor:pointer;font-size:15.5px}
+.os-st{font-size:13.5px;font-weight:600;color:var(--muted);text-align:right}
+.os-st.ok{color:var(--ok)}.os-st.note{color:var(--note)}.os-st.warn{color:var(--note)}.os-st.oletus{color:#6b6f78;font-weight:500}
+.os-napit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 0 10px}
+.os-napit>*{min-height:52px;border-radius:10px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;text-decoration:none;cursor:pointer}
+.os-ok{border:1px solid var(--ok);background:var(--ok-bg);color:#1f5138}
+.os-hav{border:0;background:var(--safety);color:#fff}
+.os-ei{border:1px dashed var(--none-line);background:#fff;color:var(--muted)}
+.os-ei[aria-pressed=true]{border-style:solid;background:var(--skip-bg)}
+.os-avaa{display:inline-block;margin:0 0 10px;font-size:14px}
+.os-kls{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 8px}
+.os-ryhma{border-top:1px solid var(--line)}
+.os-ryhma>summary{display:flex;align-items:center;gap:10px;min-height:48px;font-weight:700;cursor:pointer;list-style:none}
+.os-ryhma>summary::-webkit-details-marker{display:none}
+.os-kortti .u-sub{margin:6px 0 8px}
+.pin.mir{border-radius:4px}
+.os-p .grow{flex:1;min-width:0}
+.os-p .os-st{flex:0 0 auto;max-width:45%}
+.toast.has-act{min-width:300px;max-width:calc(100vw - 32px)}

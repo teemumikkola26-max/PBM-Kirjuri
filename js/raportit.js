@@ -199,5 +199,10 @@
     paint();
   }
 
-  window.Raportit = { RAPORTIT, hae, nimi, tunnista, paketista, aseta, kalustoMenetelmat, listaHtml, vaihda, riviHtml, uusiView };
+  /* Word-pohjan valinta raportin mukaan: PBM:n pohjien tiedostonimet (26.11.2026) */
+  const POHJA = { katselmus: /katselmus/i, tutkimusseloste: /tutkimusselost/i, kuntoarvio: /kuntoarvio/i, asuntokauppa: /asuntokaup|kuntotarkast/i,
+    rh: /kosteusmittau|\dRHx?/i, markatila: /m.?rk.?tila|märkätila/i, kalvopaksuus: /kalvopaks/i, vetokoe: /vetoko/i, merkkiaine: /merkkiain|MAKx?/i, vss: /vss|väestönsuoj/i };
+  const pohjaSopii = (k, tiedosto) => !!(k && k.raportti && POHJA[k.raportti] && POHJA[k.raportti].test(String(tiedosto || "")));
+
+  window.Raportit = { RAPORTIT, pohjaSopii, hae, nimi, tunnista, paketista, aseta, kalustoMenetelmat, listaHtml, vaihda, riviHtml, uusiView };
 })();

@@ -231,10 +231,12 @@ window.APP_VERSION = "K3.3";
   }
   /* Havainnon tunnus kentällä: H05 tai pilvikohteessa tutkijan sarja TM-05 (raportille numeroidaan uudelleen) */
   function nro(n) {
-    if (n && typeof n === "object") return n.sarja ? n.sarja + "-" + String(n.nro || "?").padStart(2, "0") : "H" + String(n.nro || "?").padStart(2, "0");
+    // K3.3: kentällä ei nimikirjaimia (TM-05); kirjaus tunnistetaan sisällöstä ja numerosta. Pilvikohteen tutkijakohtainen
+    // sarja säilyy tietona (h.sarja), ja raportille numeroidaan uudelleen juoksevasti H01, H02 …
+    if (n && typeof n === "object") return "H" + String(n.nro || "?").padStart(2, "0");
     return "H" + String(n).padStart(2, "0");
   }
-  const nroLyhyt = (h) => (h.sarja ? h.sarja : "") + (h.nro || "");
+  const nroLyhyt = (h) => String(h.nro || "");
 
   /* Tekstilaatikot kasvavat tekstin mukana (kaikki näkymät). CSS field-sizing hoitaa uudet selaimet. */
   function koko(ta) {

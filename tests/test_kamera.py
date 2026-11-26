@@ -1,4 +1,4 @@
-"""Kamera: Tallenna ja seuraava, Kumoa, puhekomennot, Muista-rivi, AKK ilman valintoja.
+"""Kamera: Sanele / Ota kuva / Valmis, Kumoa, puhekomennot, Muista-rivi, AKK ilman valintoja.
 Ajo: python3 tests/test_kamera.py"""
 import asyncio, subprocess, sys, time, os
 from playwright.async_api import async_playwright
@@ -31,7 +31,9 @@ async def main():
     await pg.evaluate(FAKE)
     await pg.goto(U+"#/k/"+kid+"/kuvaus"); await pg.wait_for_timeout(1500)
     check("kamera käynnissä", await pg.evaluate("!!Camera.stream"))
-    check("Tallenna ja seuraava -painike", "Tallenna ja seuraava" in await pg.inner_text(".cam-bottom"))
+    alapalkki=await pg.inner_text(".cam-bottom")
+    check("kolme painiketta: Sanele, Ota kuva, Valmis", all(x in alapalkki for x in ["Sanele","Ota kuva","Valmis"]), alapalkki)
+    check("paluu: Kohde", "Kohde" in await pg.inner_text(".cam-paluu"))
     await pg.click("[data-c=shot]"); await pg.wait_for_timeout(1200)
     check("kuva otettu", await pg.evaluate("(App.S.havainnot.slice(-1)[0]||{kuvat:[]}).kuvat.length")==1)
     check("Kumoa-ilmoitus", await pg.locator("#toast .toast-act").count()==1)
